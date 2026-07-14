@@ -2,9 +2,10 @@
 
 Application web locale de suivi de budget personnel, conçue pour remplacer un suivi Excel sans cloud, sans VBA et sans transmission de données personnelles.
 
-## Fonctionnalités V1.5
+## Fonctionnalités V2
 
 - tableau de bord avec KPI, graphiques, alertes et comparaison au mois précédent ;
+- résumé mensuel automatique, trajectoire du budget et comparaison détaillée M-1 ;
 - saisie, filtrage et suppression confirmée des transactions ;
 - modification rapide et sauvegardée des transactions existantes ;
 - import bancaire manuel CSV/XLSX avec association des colonnes et relecture ;
@@ -22,6 +23,12 @@ La connexion bancaire automatique, OFX/QIF/CMI et la section « Courses et recet
 La page **Import bancaire** accepte les CSV séparés par point-virgule, virgule ou tabulation, ainsi que les fichiers Excel `.xlsx`. Après l’aperçu, associez Date réelle, Libellé et Montant — ou Débit/Crédit — puis relisez chaque proposition avant validation. Les doublons probables sont visibles mais décochés. Une sauvegarde SQLite est créée automatiquement avant toute insertion.
 
 Les mots-clés et priorités se gèrent dans **Paramètres > Règles d’affectation bancaire**. La règle WERO demande toujours une relecture : complétez son sens et la catégorie remboursée avant de l’importer.
+
+## Tableau de bord et thèmes
+
+Le Tableau de bord présente six KPI, quatre graphiques interchangeables, les alertes budget, le comparatif M-1 et un résumé automatique fondé uniquement sur les données locales. Le graphique final compare séparément budget et dépenses par catégorie ; les dépassements y sont mis en évidence.
+
+Onze thèmes sont disponibles dans **Paramètres > Apparence** : cinq palettes pastel et six palettes sombres. Chaque thème adapte fonds, cartes, boutons, textes, statuts et graphiques avec un contraste approprié.
 
 ## Installation et lancement sous Windows
 

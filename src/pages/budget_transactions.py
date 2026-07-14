@@ -13,6 +13,7 @@ from src.services.transactions_service import (
     mois_disponibles,
     supprimer_transaction,
 )
+from src.ui_styles import couleurs_actives
 from src.utils import MOIS_FR, choix_mois_autour, euros, libelle_mois, mois_canonique
 
 
@@ -101,7 +102,7 @@ def _editer_transactions(transactions: list[dict]) -> None:
             st.error(str(erreur))
 
 
-def _afficher_table(transactions: list[dict]) -> pd.DataFrame:
+def _afficher_table(transactions: list[dict], couleurs: dict[str, str]) -> pd.DataFrame:
     dataframe = pd.DataFrame(transactions)
     affichage = dataframe[[
         "id", "date_reelle", "mois_budget", "type", "categorie",
@@ -114,8 +115,22 @@ def _afficher_table(transactions: list[dict]) -> pd.DataFrame:
         "Catégorie remboursée", "Libellé", "Montant bancaire", "Montant budget",
         "Moyen de paiement", "Source", "Statut import", "Commentaire",
     ]
+    couleurs_types = {
+        "Revenu": couleurs["couleur_positive"],
+        "Dépense": couleurs["couleur_negative"],
+        "Remboursement": couleurs["couleur_vigilance"],
+        "Épargne": couleurs["couleur_principale"],
+    }
+
+    def colorer_montants(ligne: pd.Series) -> pd.Series:
+        styles = pd.Series("", index=ligne.index)
+        couleur = couleurs_types.get(ligne["Type"], couleurs["couleur_texte"])
+        styles["Montant bancaire"] = f"color:{couleur};font-weight:700"
+        styles["Montant budget"] = f"color:{couleur};font-weight:700"
+        return styles
+
     st.dataframe(
-        affichage, hide_index=True, width="stretch",
+        affichage.style.apply(colorer_montants, axis=1), hide_index=True, width="stretch",
         column_config={
             "Montant bancaire": st.column_config.NumberColumn(format="%.2f €"),
             "Montant budget": st.column_config.NumberColumn(format="%.2f €"),
@@ -124,8 +139,10 @@ def _afficher_table(transactions: list[dict]) -> pd.DataFrame:
     return dataframe
 
 
-def afficher(_parametres: dict) -> None:
+def afficher(parametres: dict) -> None:
+    couleurs = couleurs_actives(parametres)
     st.title("Transactions")
+    st.subheader("Filtres")
     tous_mois = sorted(set(mois_disponibles()) | set(mois_budget_disponibles()))
     toutes_categories = sorted({c for t in TYPES_TRANSACTION for c in noms_categories(t, False)})
     c1, c2, c3, c4 = st.columns(4)
@@ -140,17 +157,23 @@ def afficher(_parametres: dict) -> None:
         recherche or None,
     )
     mode_modification = st.session_state.get("mode_modification_transactions", False)
+    col_ajouter, col_modifier, _ = st.columns([1.2, 1.2, 3])
+    if not mode_modification and col_ajouter.button(
+        "Ajouter une transaction", type="primary", width="stretch"
+    ):
+        st.session_state["afficher_ajout_transaction"] = True
     if transactions:
-        libelle_bouton = "Désactiver la modification" if mode_modification else "Activer la modification"
-        if st.button(libelle_bouton):
+        libelle_bouton = "Quitter la modification" if mode_modification else "Activer la modification"
+        if col_modifier.button(libelle_bouton, width="stretch"):
             st.session_state["mode_modification_transactions"] = not mode_modification
             st.rerun()
+    if transactions:
         if mode_modification:
-            st.info("Seules les transactions correspondant aux filtres actuels sont modifiables ci-dessous.")
+            st.warning("Mode modification actif : seules les transactions correspondant aux filtres actuels sont modifiables.")
             _editer_transactions(transactions)
             dataframe = pd.DataFrame(transactions)
         else:
-            dataframe = _afficher_table(transactions)
+            dataframe = _afficher_table(transactions, couleurs)
         m1, m2, m3 = st.columns(3)
         m1.metric("Transactions sélectionnées", len(dataframe))
         m2.metric("Total bancaire", euros(float(dataframe["montant_bancaire"].sum())))
@@ -158,8 +181,6 @@ def afficher(_parametres: dict) -> None:
     else:
         st.info("Aucune transaction ne correspond à la sélection.")
 
-    if not mode_modification and st.button("Ajouter une transaction", type="primary"):
-        st.session_state["afficher_ajout_transaction"] = True
     if not mode_modification and st.session_state.get("afficher_ajout_transaction", False):
         st.subheader("Ajouter une transaction")
         type_transaction = st.selectbox("Type", TYPES_TRANSACTION, key="type_nouvelle_transaction")

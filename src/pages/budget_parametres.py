@@ -131,18 +131,24 @@ def _afficher_regles_affectation() -> None:
 
 def afficher(parametres: dict) -> None:
     st.title("Paramètres")
-    st.subheader("Préférences")
     noms_themes = list(THEMES)
     theme_actuel = parametres.get("theme_actif", "Vert pastel")
     with st.form("parametres_generaux"):
+        st.subheader("Apparence")
         theme = st.selectbox(
             "Thème actif", noms_themes,
             index=noms_themes.index(theme_actuel) if theme_actuel in noms_themes else 0,
         )
+        st.caption("Le thème s’applique à toutes les pages après enregistrement.")
+        st.divider()
+        st.subheader("Épargne")
         solde = st.number_input(
             "Solde initial d’épargne", value=float(parametres.get("solde_initial_epargne", 0)),
             step=100.0, format="%.2f",
         )
+        st.caption("Ce solde sert de point de départ au calcul chronologique de l’épargne.")
+        st.divider()
+        st.subheader("Alertes budget")
         vigilance = st.number_input(
             "Seuil vigilance budget (%)", min_value=0.0, max_value=1000.0,
             value=float(parametres.get("seuil_vigilance_budget", 0.8)) * 100, step=5.0,
@@ -164,11 +170,11 @@ def afficher(parametres: dict) -> None:
                 st.success("Paramètres enregistrés.")
                 st.rerun()
 
-    _afficher_regles_affectation()
     st.divider()
-    st.subheader("Sauvegarde et export")
+    st.subheader("Sauvegarde et restauration")
+    st.caption("Les sauvegardes et exports restent uniquement sur cet ordinateur.")
     c1, c2 = st.columns(2)
-    if c1.button("Créer une sauvegarde manuelle", width="stretch"):
+    if c1.button("Sauvegarder maintenant", type="primary", width="stretch"):
         try:
             chemin = creer_sauvegarde()
             st.success(f"Sauvegarde créée : {chemin.name}")
@@ -197,3 +203,5 @@ def afficher(parametres: dict) -> None:
                 st.rerun()
             except Exception as erreur:
                 st.error(f"Restauration impossible : {erreur}")
+
+    _afficher_regles_affectation()

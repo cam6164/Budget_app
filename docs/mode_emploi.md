@@ -1,5 +1,24 @@
 # Mode d’emploi
 
+## Choisir l’apparence
+
+Ouvrez **Paramètres > Apparence**, choisissez l’un des onze thèmes pastel ou sombres, puis enregistrez. Le choix est conservé dans SQLite et s’applique à toutes les pages, y compris les graphiques.
+
+## Lire le Tableau de bord
+
+Sélectionnez un mois budget en haut de **Tableau de bord**. Les six cartes indiquent revenus, budget de dépenses, dépenses réelles, reste disponible, épargne nette et taux d’épargne.
+
+La zone centrale n’affiche qu’un graphique à la fois :
+
+- **Suivi du mois** compare les dépenses cumulées à une consommation théorique régulière du budget ;
+- **Dépenses par mois** montre la tendance chronologique ;
+- **Équilibre mensuel** compare revenus, dépenses et épargne nette ;
+- **Taux d’épargne** suit le pourcentage épargné.
+
+Le bloc **Comparatif M-1** détaille les valeurs du mois, celles du mois précédent, les écarts et évolutions. **Alertes budget** signale dépassements, seuils de vigilance, dépenses sans budget et reste négatif. **Résumé du mois** assemble quelques constats automatiques sans utiliser de service externe.
+
+En bas, le graphique par catégorie exclut les lignes entièrement vides et colore les dépenses dépassant le budget.
+
 ## Lancer l’application
 
 Installez Python 3.11 ou 3.12, puis double-cliquez sur `start_app.bat`. Le premier lancement crée l’environnement `.venv`, installe les dépendances et démarre Streamlit. Les lancements suivants réutilisent cet environnement.
@@ -7,6 +26,8 @@ Installez Python 3.11 ou 3.12, puis double-cliquez sur `start_app.bat`. Le premi
 ## Créer le premier budget
 
 Ouvrez **Budget mensuel**, choisissez l’année et le mois dans la vue annuelle simplifiée, puis cliquez sur **Créer le premier budget**. Une ligne à 0 € est créée pour chaque catégorie active de revenu, dépense et épargne. Modifiez la colonne **Budget prévu**, puis enregistrez. Le bouton **Créer le mois suivant** recopie les montants du dernier mois.
+
+En V2, le tableau est protégé en lecture par défaut. Cliquez sur **Modifier les budgets** pour activer l’édition ; les statuts OK, Vigilance et Dépassement restent visibles et utilisent les seuils définis dans Paramètres.
 
 ## Ajouter une transaction
 

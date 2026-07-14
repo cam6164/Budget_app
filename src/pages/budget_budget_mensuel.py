@@ -10,10 +10,12 @@ from src.services.budget_service import (
     mois_budget_disponibles,
     rapport_budget,
 )
+from src.ui_styles import couleurs_actives
 from src.utils import MOIS_FR, libelle_mois
 
 
 def afficher(parametres: dict) -> None:
+    couleurs = couleurs_actives(parametres)
     st.title("Budget mensuel")
     mois_existants = mois_budget_disponibles()
     if not mois_existants:
@@ -37,10 +39,11 @@ def afficher(parametres: dict) -> None:
     mois = col_mois.selectbox(
         "Mois", mois_existants, index=len(mois_existants) - 1, format_func=libelle_mois
     )
-    if col_action.button("Créer le mois suivant", width="stretch"):
+    if col_action.button("Créer le mois suivant", type="primary", width="stretch"):
         suivant = creer_mois_suivant()
         st.success(f"Le budget {libelle_mois(suivant)} a été créé à partir du mois précédent.")
         st.rerun()
+    st.caption(f"Budget affiché : {libelle_mois(mois)}")
 
     rapport = rapport_budget(
         mois,
@@ -60,25 +63,61 @@ def afficher(parametres: dict) -> None:
         "Identifiant", "Mois", "Type", "Catégorie", "Budget prévu", "Réel",
         "Écart", "% utilisé", "Statut",
     ]
-    modifie = st.data_editor(
-        edition_affichee,
-        hide_index=True,
-        width="stretch",
-        disabled=["Identifiant", "Mois", "Type", "Catégorie", "Réel", "Écart", "% utilisé", "Statut"],
-        column_config={
-            "Identifiant": None,
-            "Budget prévu": st.column_config.NumberColumn(min_value=0.0, step=10.0, format="%.2f €"),
-            "Réel": st.column_config.NumberColumn(format="%.2f €"),
-            "Écart": st.column_config.NumberColumn(format="%.2f €"),
-            "% utilisé": st.column_config.ProgressColumn(min_value=0.0, max_value=1.0, format="%.0f %%"),
-        },
-        key=f"edition_budget_{mois}",
-    )
-    if st.button("Enregistrer les budgets prévus", type="primary"):
-        lignes = [
-            {"id": int(ligne["Identifiant"]), "budget_prevu": float(ligne["Budget prévu"])}
-            for _, ligne in modifie.iterrows()
-        ]
-        enregistrer_budgets(lignes)
-        st.success("Budgets enregistrés et indicateurs recalculés.")
-        st.rerun()
+    mode_modification = st.session_state.get("mode_modification_budget", False)
+    if not mode_modification:
+        vue = edition_affichee.drop(columns=["Identifiant"]).copy()
+        vue["Statut"] = vue["Statut"].map(
+            {"OK": "● OK", "Vigilance": "● Vigilance", "Dépassement": "● Dépassement"}
+        ).fillna(vue["Statut"])
+
+        def style_statut(valeur: str) -> str:
+            if "Dépassement" in valeur:
+                return f"color:{couleurs['couleur_negative']};font-weight:700"
+            if "Vigilance" in valeur:
+                return f"color:{couleurs['couleur_vigilance']};font-weight:700"
+            return f"color:{couleurs['couleur_positive']};font-weight:700"
+
+        style = vue.style.map(style_statut, subset=["Statut"])
+        st.dataframe(
+            style,
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "Budget prévu": st.column_config.NumberColumn(format="%.2f €"),
+                "Réel": st.column_config.NumberColumn(format="%.2f €"),
+                "Écart": st.column_config.NumberColumn(format="%.2f €"),
+                "% utilisé": st.column_config.ProgressColumn(min_value=0.0, max_value=1.0, format="%.0f %%"),
+            },
+        )
+        if st.button("Modifier les budgets", type="primary"):
+            st.session_state["mode_modification_budget"] = True
+            st.rerun()
+    else:
+        st.info("Mode modification actif : seule la colonne Budget prévu est modifiable.")
+        modifie = st.data_editor(
+            edition_affichee,
+            hide_index=True,
+            width="stretch",
+            disabled=["Identifiant", "Mois", "Type", "Catégorie", "Réel", "Écart", "% utilisé", "Statut"],
+            column_config={
+                "Identifiant": None,
+                "Budget prévu": st.column_config.NumberColumn(min_value=0.0, step=10.0, format="%.2f €"),
+                "Réel": st.column_config.NumberColumn(format="%.2f €"),
+                "Écart": st.column_config.NumberColumn(format="%.2f €"),
+                "% utilisé": st.column_config.ProgressColumn(min_value=0.0, max_value=1.0, format="%.0f %%"),
+            },
+            key=f"edition_budget_{mois}",
+        )
+        col_enregistrer, col_annuler = st.columns(2)
+        if col_enregistrer.button("Enregistrer les budgets prévus", type="primary", width="stretch"):
+            lignes = [
+                {"id": int(ligne["Identifiant"]), "budget_prevu": float(ligne["Budget prévu"])}
+                for _, ligne in modifie.iterrows()
+            ]
+            enregistrer_budgets(lignes)
+            st.session_state["mode_modification_budget"] = False
+            st.success("Budgets enregistrés et indicateurs recalculés.")
+            st.rerun()
+        if col_annuler.button("Annuler la modification", width="stretch"):
+            st.session_state["mode_modification_budget"] = False
+            st.rerun()

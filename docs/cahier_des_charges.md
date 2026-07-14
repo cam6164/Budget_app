@@ -1,4 +1,4 @@
-# Cahier des charges — V1.5
+# Cahier des charges — V2
 
 ## Objectif
 
@@ -17,6 +17,10 @@ Fournir une application locale en français pour suivre les revenus, dépenses, 
 - calculs mensuels de réel, écart, utilisation et statut ;
 - suivi d’épargne avec soldes chaînés ;
 - tableau de bord avec six KPI et cinq visualisations ;
+- quatre graphiques interchangeables utilisant le thème actif et un graphique par catégorie séparé ;
+- alertes détaillées, comparatif complet M-1 et résumé automatique local ;
+- onze thèmes complets, cinq pastel et six sombres, avec contrastes adaptés ;
+- suivi d’épargne enrichi de cartes mensuelles et d’une courbe de solde ;
 - paramètres, dix thèmes, sauvegarde, restauration et export CSV.
 
 ## Règles essentielles

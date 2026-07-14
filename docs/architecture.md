@@ -9,6 +9,7 @@
 - `src/pages/` contient uniquement les vues Streamlit ;
 - `src/utils.py` gère les mois français, décalages et formats ;
 - `src/themes.py` contient les palettes et le CSS ;
+- `src/ui_styles.py` fournit les cartes KPI et le style Plotly partagé ;
 - `data/`, `backups/` et `exports/` contiennent les données locales non versionnées.
 
 ## Services
@@ -19,6 +20,7 @@
 - `budget_service` crée, duplique et calcule les budgets ;
 - `epargne_service` calcule les soldes mensuels chaînés ;
 - `tableau_de_bord_service` produit KPI et séries graphiques ;
+- `tableau_de_bord_service` génère aussi alertes structurées, comparatif M-1 et résumé par règles ;
 - `categories_service` garantit les catégories dynamiques et protège leur suppression ;
 - `backup_service` copie/restaure SQLite et exporte le CSV.
 
@@ -33,3 +35,9 @@ Les mois sont stockés en `AAAA-MM` afin que le tri alphabétique soit aussi chr
 Le réel d’une dépense additionne les transactions de dépense et les remboursements rattachés à cette catégorie. L’écart d’une dépense est `prévu - réel`; pour un revenu ou l’épargne, il est `réel - prévu`. Les seuils de vigilance et d’alerte viennent des paramètres. Le solde d’épargne est recalculé dans l’ordre des mois à partir du solde initial.
 
 À l’import, les libellés sont convertis en majuscules sans accents et avec espaces normalisés. La première règle active par priorité puis identifiant est appliquée. Les doublons utilisent la clé date réelle + montant bancaire arrondi + libellé normalisé. La validation prépare toutes les lignes, crée une sauvegarde, puis insère le lot dans une transaction SQLite.
+
+## Présentation V2
+
+Chaque thème expose dix-sept couleurs sémantiques : fonds, cartes, blocs, boutons, textes, bordures, états et trois séries graphiques. `app.py` charge le thème enregistré avant le routage ; toutes les pages héritent donc du même CSS. Les graphiques Plotly reçoivent explicitement la palette active afin de préserver les contrastes en mode sombre.
+
+Le résumé automatique ne fait aucun appel réseau : il combine KPI, alertes et évolution M-1 selon des règles déterministes. La courbe réelle du suivi mensuel contient des valeurs nulles après le dernier jour de dépense, ce qui empêche Plotly de la prolonger artificiellement.
