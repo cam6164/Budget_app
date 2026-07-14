@@ -2,17 +2,26 @@
 
 Application web locale de suivi de budget personnel, conçue pour remplacer un suivi Excel sans cloud, sans VBA et sans transmission de données personnelles.
 
-## Fonctionnalités V1
+## Fonctionnalités V1.5
 
 - tableau de bord avec KPI, graphiques, alertes et comparaison au mois précédent ;
 - saisie, filtrage et suppression confirmée des transactions ;
+- modification rapide et sauvegardée des transactions existantes ;
+- import bancaire manuel CSV/XLSX avec association des colonnes et relecture ;
+- règles d’affectation automatiques, détection des doublons et validation sélective ;
 - budget mensuel éditable et duplication du mois précédent ;
 - suivi chronologique de l’épargne ;
 - catégories dynamiques activables et désactivables ;
 - thèmes clairs et sombres ;
 - sauvegarde/restauration SQLite et export CSV.
 
-L’import bancaire CIC et la section « Courses et recettes » ne font pas partie de cette V1.
+La connexion bancaire automatique, OFX/QIF/CMI et la section « Courses et recettes » ne font pas partie de cette version.
+
+## Import bancaire
+
+La page **Import bancaire** accepte les CSV séparés par point-virgule, virgule ou tabulation, ainsi que les fichiers Excel `.xlsx`. Après l’aperçu, associez Date réelle, Libellé et Montant — ou Débit/Crédit — puis relisez chaque proposition avant validation. Les doublons probables sont visibles mais décochés. Une sauvegarde SQLite est créée automatiquement avant toute insertion.
+
+Les mots-clés et priorités se gèrent dans **Paramètres > Règles d’affectation bancaire**. La règle WERO demande toujours une relecture : complétez son sens et la catégorie remboursée avant de l’importer.
 
 ## Installation et lancement sous Windows
 

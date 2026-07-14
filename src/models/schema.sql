@@ -55,8 +55,22 @@ CREATE TABLE IF NOT EXISTS backups_log (
     commentaire TEXT
 );
 
+CREATE TABLE IF NOT EXISTS regles_affectation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mot_cle TEXT NOT NULL,
+    type_attribue TEXT NOT NULL,
+    categorie_attribuee TEXT,
+    sens_remboursement TEXT,
+    categorie_remboursee TEXT,
+    actif INTEGER NOT NULL DEFAULT 1,
+    priorite INTEGER DEFAULT 100,
+    created_at TEXT,
+    updated_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_transactions_mois_budget
     ON transactions(mois_budget);
 CREATE INDEX IF NOT EXISTS idx_budgets_mois
     ON budgets(mois);
-
+CREATE INDEX IF NOT EXISTS idx_regles_priorite
+    ON regles_affectation(actif, priorite);

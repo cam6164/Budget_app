@@ -14,6 +14,8 @@
 ## Services
 
 - `transactions_service` normalise les signes, calcule le mois budget et gère les transactions ;
+- `import_bancaire_service` lit CSV/XLSX, mappe les colonnes, prépare, dédoublonne et valide les lots ;
+- `regles_affectation_service` normalise les libellés et applique les règles ordonnées par priorité ;
 - `budget_service` crée, duplique et calcule les budgets ;
 - `epargne_service` calcule les soldes mensuels chaînés ;
 - `tableau_de_bord_service` produit KPI et séries graphiques ;
@@ -22,7 +24,7 @@
 
 ## SQLite
 
-`categories` contient les référentiels actifs ou archivés. `transactions` distingue date réelle, mois réel, mois budget, montant bancaire et montant analytique. `budgets` contient uniquement les prévisions par mois/type/catégorie. `settings` stocke les préférences sous forme clé/valeur. `backups_log` journalise les sauvegardes.
+`categories` contient les référentiels actifs ou archivés. `transactions` distingue date réelle, mois réel, mois budget, montant bancaire et montant analytique ; `source`, `statut_import` et `import_id` assurent la traçabilité bancaire. `budgets` contient uniquement les prévisions par mois/type/catégorie. `settings` stocke les préférences sous forme clé/valeur. `backups_log` journalise les sauvegardes. `regles_affectation` stocke mots-clés, affectations, activation et priorité.
 
 Les mois sont stockés en `AAAA-MM` afin que le tri alphabétique soit aussi chronologique. Les dates utilisent le format ISO. Les indicateurs calculés ne sont pas stockés.
 
@@ -30,3 +32,4 @@ Les mois sont stockés en `AAAA-MM` afin que le tri alphabétique soit aussi chr
 
 Le réel d’une dépense additionne les transactions de dépense et les remboursements rattachés à cette catégorie. L’écart d’une dépense est `prévu - réel`; pour un revenu ou l’épargne, il est `réel - prévu`. Les seuils de vigilance et d’alerte viennent des paramètres. Le solde d’épargne est recalculé dans l’ordre des mois à partir du solde initial.
 
+À l’import, les libellés sont convertis en majuscules sans accents et avec espaces normalisés. La première règle active par priorité puis identifiant est appliquée. Les doublons utilisent la clé date réelle + montant bancaire arrondi + libellé normalisé. La validation prépare toutes les lignes, crée une sauvegarde, puis insère le lot dans une transaction SQLite.

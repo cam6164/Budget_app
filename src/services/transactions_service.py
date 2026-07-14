@@ -109,10 +109,79 @@ def supprimer_transaction(transaction_id: int) -> bool:
     return curseur.rowcount > 0
 
 
+def modifier_transactions(transactions: list[dict]) -> int:
+    """Valide puis enregistre un lot de modifications après sauvegarde locale."""
+    from src.services.backup_service import creer_sauvegarde
+    from src.services.import_bancaire_service import normaliser_date, normaliser_montant
+
+    lignes: list[dict] = []
+    for index, transaction in enumerate(transactions, start=1):
+        try:
+            date_reelle = normaliser_date(transaction["date_reelle"])
+            type_transaction = str(transaction["type"]).strip()
+            if type_transaction not in ("Revenu", "Dépense", "Épargne", "Remboursement"):
+                raise ValueError("type non reconnu")
+            libelle = str(transaction["libelle"]).strip()
+            if not libelle:
+                raise ValueError("libellé obligatoire")
+            sens = str(transaction.get("sens_remboursement", "") or "").strip()
+            categorie_remboursee = str(
+                transaction.get("categorie_remboursee", "") or ""
+            ).strip()
+            if type_transaction == "Remboursement" and (
+                sens not in ("On me rembourse", "Je rembourse quelqu’un")
+                or not categorie_remboursee
+            ):
+                raise ValueError("remboursement incomplet")
+            lignes.append(
+                {
+                    "id": int(transaction["id"]),
+                    "date_reelle": date_reelle.isoformat(),
+                    "mois_reel": mois_canonique(date_reelle),
+                    "mois_budget": mois_canonique(str(transaction["mois_budget"])),
+                    "type": type_transaction,
+                    "sens": sens or None,
+                    "categorie": str(transaction.get("categorie", "") or "").strip() or None,
+                    "categorie_remboursee": categorie_remboursee or None,
+                    "libelle": libelle,
+                    "montant_bancaire": normaliser_montant(transaction["montant_bancaire"]),
+                    "montant_budget": normaliser_montant(transaction["montant_budget"]),
+                    "moyen_paiement": str(transaction.get("moyen_paiement", "") or "").strip() or None,
+                    "commentaire": str(transaction.get("commentaire", "") or ""),
+                }
+            )
+        except Exception as erreur:
+            raise ValueError(f"Ligne {index} invalide : {erreur}") from erreur
+    if not lignes:
+        return 0
+    creer_sauvegarde("Sauvegarde automatique avant modification des transactions")
+    horodatage = maintenant()
+    with connexion_db() as connexion:
+        for ligne in lignes:
+            curseur = connexion.execute(
+                """UPDATE transactions SET
+                       date_reelle = ?, mois_reel = ?, mois_budget = ?, type = ?,
+                       sens_remboursement = ?, categorie = ?, categorie_remboursee = ?,
+                       libelle = ?, montant_bancaire = ?, montant_budget = ?,
+                       moyen_paiement = ?, commentaire = ?, updated_at = ?
+                   WHERE id = ?""",
+                (
+                    ligne["date_reelle"], ligne["mois_reel"], ligne["mois_budget"],
+                    ligne["type"], ligne["sens"], ligne["categorie"],
+                    ligne["categorie_remboursee"], ligne["libelle"],
+                    ligne["montant_bancaire"], ligne["montant_budget"],
+                    ligne["moyen_paiement"], ligne["commentaire"], horodatage,
+                    ligne["id"],
+                ),
+            )
+            if curseur.rowcount == 0:
+                raise ValueError(f"Transaction n°{ligne['id']} introuvable.")
+    return len(lignes)
+
+
 def mois_disponibles() -> list[str]:
     with connexion_db() as connexion:
         lignes = connexion.execute(
             "SELECT DISTINCT mois_budget FROM transactions ORDER BY mois_budget"
         ).fetchall()
     return [ligne[0] for ligne in lignes]
-

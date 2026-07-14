@@ -2,7 +2,7 @@ import streamlit as st
 
 
 PAGES = [
-    "Accueil", "Tableau de bord", "Transactions", "Budget mensuel",
+    "Accueil", "Tableau de bord", "Transactions", "Import bancaire", "Budget mensuel",
     "Épargne", "Catégories", "Paramètres",
 ]
 

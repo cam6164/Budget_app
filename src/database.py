@@ -8,6 +8,7 @@ from src.config import (
     DATABASE_PATH,
     DATA_DIR,
     PARAMETRES_DEFAUT,
+    REGLES_AFFECTATION_DEFAUT,
     SCHEMA_PATH,
 )
 
@@ -57,6 +58,26 @@ def initialiser_base() -> None:
                 "INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)",
                 (cle, valeur),
             )
+        nombre_regles = connexion.execute(
+            "SELECT COUNT(*) FROM regles_affectation"
+        ).fetchone()[0]
+        if nombre_regles == 0:
+            horodatage = maintenant()
+            for regle in REGLES_AFFECTATION_DEFAUT:
+                connexion.execute(
+                    """INSERT INTO regles_affectation (
+                           mot_cle, type_attribue, categorie_attribuee,
+                           sens_remboursement, categorie_remboursee, actif,
+                           priorite, created_at, updated_at
+                       ) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)""",
+                    (
+                        regle["mot_cle"], regle["type_attribue"],
+                        regle.get("categorie_attribuee", ""),
+                        regle.get("sens_remboursement", ""),
+                        regle.get("categorie_remboursee", ""),
+                        regle["priorite"], horodatage, horodatage,
+                    ),
+                )
 
 
 def lire_parametres() -> dict[str, str]:
@@ -73,4 +94,3 @@ def enregistrer_parametres(parametres: dict[str, str | float]) -> None:
                    ON CONFLICT(key) DO UPDATE SET value = excluded.value""",
                 (cle, str(valeur)),
             )
-

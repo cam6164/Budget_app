@@ -1,4 +1,4 @@
-# Cahier des charges — V1
+# Cahier des charges — V1.5
 
 ## Objectif
 
@@ -8,6 +8,10 @@ Fournir une application locale en français pour suivre les revenus, dépenses, 
 
 - accueil présentant le module budget actif et le futur module courses ;
 - transactions manuelles, filtres, recherche, totaux et suppression confirmée ;
+- modification en tableau des transactions avec sauvegarde préalable ;
+- import manuel CSV/XLSX, association des colonnes, relecture et sélection des lignes ;
+- règles d’affectation configurables avec priorité et catégories dynamiques ;
+- détection conservatrice des doublons sur date, montant et libellé normalisé ;
 - catégories dynamiques avec ajout, modification, désactivation et suppression protégée ;
 - création du premier budget, modification des montants et duplication du mois suivant ;
 - calculs mensuels de réel, écart, utilisation et statut ;
@@ -23,5 +27,4 @@ Une dépense possède un montant bancaire négatif mais un montant budgétaire p
 
 ## Hors périmètre V1
 
-Import CIC, règles bancaires automatiques, courses et recettes, cloud, mobile, authentification et reprise de l’ancien fichier Excel.
-
+Connexion bancaire automatique, OFX, QIF, CMI, OCR, courses et recettes, cloud, mobile, authentification et reprise de l’ancien fichier Excel.

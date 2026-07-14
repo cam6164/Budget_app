@@ -7,6 +7,7 @@ from src.pages import (
     budget_budget_mensuel,
     budget_categories,
     budget_epargne,
+    budget_import_bancaire,
     budget_parametres,
     budget_tableau_de_bord,
     budget_transactions,
@@ -36,6 +37,7 @@ def main() -> None:
         "Accueil": accueil.afficher,
         "Tableau de bord": budget_tableau_de_bord.afficher,
         "Transactions": budget_transactions.afficher,
+        "Import bancaire": budget_import_bancaire.afficher,
         "Budget mensuel": budget_budget_mensuel.afficher,
         "Épargne": budget_epargne.afficher,
         "Catégories": budget_categories.afficher,
@@ -46,4 +48,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

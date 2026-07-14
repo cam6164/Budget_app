@@ -9,6 +9,7 @@ from src.services.categories_service import noms_categories
 from src.services.transactions_service import (
     ajouter_transaction,
     lister_transactions,
+    modifier_transactions,
     mois_disponibles,
     supprimer_transaction,
 )
@@ -22,6 +23,105 @@ def _mois_manuel(date_transaction: date, mode: str, annee: int, numero_mois: int
     if mode == "Autre":
         return f"{annee:04d}-{numero_mois:02d}"
     return choix_mois_autour(reference)[mode]
+
+
+def _texte_cellule(valeur: object) -> str:
+    return "" if pd.isna(valeur) else str(valeur)
+
+
+def _editer_transactions(transactions: list[dict]) -> None:
+    colonnes = [
+        "id", "date_reelle", "mois_budget", "type", "sens_remboursement",
+        "categorie", "categorie_remboursee", "libelle", "montant_bancaire",
+        "montant_budget", "moyen_paiement", "commentaire",
+    ]
+    edition = pd.DataFrame(transactions)[colonnes].copy()
+    edition["date_reelle"] = pd.to_datetime(edition["date_reelle"]).dt.date
+    edition["mois_budget"] = edition["mois_budget"].map(libelle_mois)
+    champs_texte = [
+        "sens_remboursement", "categorie", "categorie_remboursee", "libelle",
+        "moyen_paiement", "commentaire",
+    ]
+    edition[champs_texte] = edition[champs_texte].fillna("")
+    edition.columns = [
+        "Identifiant", "Date réelle", "Mois budget", "Type",
+        "Sens remboursement", "Catégorie", "Catégorie remboursée", "Libellé",
+        "Montant bancaire", "Montant budget", "Moyen de paiement", "Commentaire",
+    ]
+    categories = sorted(
+        {categorie for type_categorie in TYPES_TRANSACTION for categorie in noms_categories(type_categorie, True)}
+    )
+    categories_depense = noms_categories("Dépense", True)
+    modifie = st.data_editor(
+        edition,
+        hide_index=True,
+        width="stretch",
+        num_rows="fixed",
+        disabled=["Identifiant"],
+        column_config={
+            "Identifiant": None,
+            "Date réelle": st.column_config.DateColumn(format="DD/MM/YYYY"),
+            "Mois budget": st.column_config.TextColumn(help="Format français court, par exemple juil-26."),
+            "Type": st.column_config.SelectboxColumn(options=TYPES_TRANSACTION),
+            "Sens remboursement": st.column_config.SelectboxColumn(options=[""] + SENS_REMBOURSEMENT),
+            "Catégorie": st.column_config.SelectboxColumn(options=[""] + categories),
+            "Catégorie remboursée": st.column_config.SelectboxColumn(options=[""] + categories_depense),
+            "Montant bancaire": st.column_config.NumberColumn(format="%.2f €"),
+            "Montant budget": st.column_config.NumberColumn(format="%.2f €"),
+            "Moyen de paiement": st.column_config.SelectboxColumn(options=[""] + MOYENS_PAIEMENT),
+        },
+        key="edition_transactions",
+    )
+    st.warning("L’enregistrement crée automatiquement une sauvegarde de la base.")
+    if st.button("Enregistrer les modifications", type="primary"):
+        lignes = []
+        for _, ligne in modifie.iterrows():
+            lignes.append(
+                {
+                    "id": int(ligne["Identifiant"]),
+                    "date_reelle": ligne["Date réelle"],
+                    "mois_budget": _texte_cellule(ligne["Mois budget"]),
+                    "type": _texte_cellule(ligne["Type"]),
+                    "sens_remboursement": _texte_cellule(ligne["Sens remboursement"]),
+                    "categorie": _texte_cellule(ligne["Catégorie"]),
+                    "categorie_remboursee": _texte_cellule(ligne["Catégorie remboursée"]),
+                    "libelle": _texte_cellule(ligne["Libellé"]),
+                    "montant_bancaire": ligne["Montant bancaire"],
+                    "montant_budget": ligne["Montant budget"],
+                    "moyen_paiement": _texte_cellule(ligne["Moyen de paiement"]),
+                    "commentaire": _texte_cellule(ligne["Commentaire"]),
+                }
+            )
+        try:
+            nombre = modifier_transactions(lignes)
+            st.session_state["mode_modification_transactions"] = False
+            st.success(f"{nombre} transaction(s) mise(s) à jour.")
+            st.rerun()
+        except Exception as erreur:
+            st.error(str(erreur))
+
+
+def _afficher_table(transactions: list[dict]) -> pd.DataFrame:
+    dataframe = pd.DataFrame(transactions)
+    affichage = dataframe[[
+        "id", "date_reelle", "mois_budget", "type", "categorie",
+        "categorie_remboursee", "libelle", "montant_bancaire", "montant_budget",
+        "moyen_paiement", "source", "statut_import", "commentaire",
+    ]].copy()
+    affichage["mois_budget"] = affichage["mois_budget"].map(libelle_mois)
+    affichage.columns = [
+        "Identifiant", "Date réelle", "Mois budget", "Type", "Catégorie",
+        "Catégorie remboursée", "Libellé", "Montant bancaire", "Montant budget",
+        "Moyen de paiement", "Source", "Statut import", "Commentaire",
+    ]
+    st.dataframe(
+        affichage, hide_index=True, width="stretch",
+        column_config={
+            "Montant bancaire": st.column_config.NumberColumn(format="%.2f €"),
+            "Montant budget": st.column_config.NumberColumn(format="%.2f €"),
+        },
+    )
+    return dataframe
 
 
 def afficher(_parametres: dict) -> None:
@@ -39,36 +139,28 @@ def afficher(_parametres: dict) -> None:
         None if filtre_categorie == "Toutes" else filtre_categorie,
         recherche or None,
     )
+    mode_modification = st.session_state.get("mode_modification_transactions", False)
     if transactions:
-        df = pd.DataFrame(transactions)
-        affichage = df[[
-            "id", "date_reelle", "mois_budget", "type", "categorie",
-            "categorie_remboursee", "libelle", "montant_bancaire", "montant_budget",
-            "moyen_paiement", "commentaire",
-        ]].copy()
-        affichage["mois_budget"] = affichage["mois_budget"].map(libelle_mois)
-        affichage.columns = [
-            "Identifiant", "Date réelle", "Mois budget", "Type", "Catégorie",
-            "Catégorie remboursée", "Libellé", "Montant bancaire", "Montant budget",
-            "Moyen de paiement", "Commentaire",
-        ]
-        st.dataframe(
-            affichage, hide_index=True, width="stretch",
-            column_config={
-                "Montant bancaire": st.column_config.NumberColumn(format="%.2f €"),
-                "Montant budget": st.column_config.NumberColumn(format="%.2f €"),
-            },
-        )
+        libelle_bouton = "Désactiver la modification" if mode_modification else "Activer la modification"
+        if st.button(libelle_bouton):
+            st.session_state["mode_modification_transactions"] = not mode_modification
+            st.rerun()
+        if mode_modification:
+            st.info("Seules les transactions correspondant aux filtres actuels sont modifiables ci-dessous.")
+            _editer_transactions(transactions)
+            dataframe = pd.DataFrame(transactions)
+        else:
+            dataframe = _afficher_table(transactions)
         m1, m2, m3 = st.columns(3)
-        m1.metric("Transactions sélectionnées", len(df))
-        m2.metric("Total bancaire", euros(float(df["montant_bancaire"].sum())))
-        m3.metric("Total budget", euros(float(df["montant_budget"].sum())))
+        m1.metric("Transactions sélectionnées", len(dataframe))
+        m2.metric("Total bancaire", euros(float(dataframe["montant_bancaire"].sum())))
+        m3.metric("Total budget", euros(float(dataframe["montant_budget"].sum())))
     else:
         st.info("Aucune transaction ne correspond à la sélection.")
 
-    if st.button("Ajouter une transaction", type="primary"):
+    if not mode_modification and st.button("Ajouter une transaction", type="primary"):
         st.session_state["afficher_ajout_transaction"] = True
-    if st.session_state.get("afficher_ajout_transaction", False):
+    if not mode_modification and st.session_state.get("afficher_ajout_transaction", False):
         st.subheader("Ajouter une transaction")
         type_transaction = st.selectbox("Type", TYPES_TRANSACTION, key="type_nouvelle_transaction")
         categories = noms_categories(type_transaction, True)
@@ -107,7 +199,7 @@ def afficher(_parametres: dict) -> None:
                 except Exception as erreur:
                     st.error(str(erreur))
 
-    if transactions:
+    if transactions and not mode_modification:
         with st.expander("Supprimer une transaction"):
             libelles = {f"n°{t['id']} — {t['date_reelle']} — {t['libelle']}": t["id"] for t in transactions}
             choix = st.selectbox("Transaction à supprimer", list(libelles))
