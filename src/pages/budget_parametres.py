@@ -3,6 +3,7 @@ import streamlit as st
 
 from src.config import CONFIGURATIONS_AFFICHAGE, SENS_REMBOURSEMENT, TYPES_TRANSACTION
 from src.database import enregistrer_parametres
+from src.navigation import recharger_page
 from src.services.backup_service import (
     creer_sauvegarde,
     exporter_transactions_csv,
@@ -64,7 +65,7 @@ def _afficher_regles_affectation(table_height: int) -> None:
                         categorie_remboursee, actif, int(priorite),
                     )
                     st.success("Règle ajoutée.")
-                    st.rerun()
+                    recharger_page("Paramètres")
                 except Exception as erreur:
                     st.error(str(erreur))
 
@@ -118,7 +119,7 @@ def _afficher_regles_affectation(table_height: int) -> None:
                     int(priorite_modifiee),
                 )
                 st.success("Règle mise à jour.")
-                st.rerun()
+                recharger_page("Paramètres")
             except Exception as erreur:
                 st.error(str(erreur))
     confirmer_suppression = st.checkbox(
@@ -127,7 +128,7 @@ def _afficher_regles_affectation(table_height: int) -> None:
     if st.button("Supprimer la règle", disabled=not confirmer_suppression):
         supprimer_regle(selection["id"])
         st.success("Règle supprimée.")
-        st.rerun()
+        recharger_page("Paramètres")
 
 
 def afficher(parametres: dict) -> None:
@@ -182,7 +183,7 @@ def afficher(parametres: dict) -> None:
                     "seuil_alerte_budget": alerte / 100,
                 })
                 st.success("Paramètres enregistrés.")
-                st.rerun()
+                recharger_page("Paramètres")
 
     st.divider()
     st.subheader("Sauvegarde et restauration")
@@ -214,7 +215,7 @@ def afficher(parametres: dict) -> None:
             try:
                 restaurer_sauvegarde(choix)
                 st.success("Sauvegarde restaurée. L’application va recharger les données.")
-                st.rerun()
+                recharger_page("Paramètres")
             except Exception as erreur:
                 st.error(f"Restauration impossible : {erreur}")
 

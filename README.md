@@ -4,7 +4,7 @@ Application web locale de suivi de budget personnel, conçue pour remplacer un s
 
 ## Fonctionnalités V2
 
-- tableau de bord avec KPI, graphiques, alertes et comparaison au mois précédent ;
+- tableau de bord sans grand graphique secondaire, avec six KPI, cinq graphiques interchangeables, alertes compactes et grille budget/réel type Excel ;
 - résumé mensuel automatique, trajectoire du budget et comparaison détaillée M-1 ;
 - saisie en fenêtre compacte, filtrage et suppression multiple confirmée des transactions ;
 - modification rapide et sauvegardée des transactions existantes ;
@@ -26,7 +26,9 @@ Les libellés bancaires techniques sont automatiquement raccourcis pour la lectu
 
 ## Tableau de bord et thèmes
 
-Le Tableau de bord présente six KPI, quatre graphiques interchangeables, les alertes budget, le comparatif M-1 et un résumé automatique fondé uniquement sur les données locales. Le graphique final compare séparément budget et dépenses par catégorie ; les dépassements y sont mis en évidence.
+Le Tableau de bord présente six KPI compacts et cinq graphiques interchangeables, dont l’évolution du solde d’épargne. Les alertes et le comparatif M-1 restent placés à côté du graphique principal. Le graphique final compare séparément budget et dépenses par catégorie.
+
+Le bandeau natif Streamlit est masqué sur toutes les pages. Le menu latéral possède ses propres commandes : **‹** le referme et la poignée **☰** permet de le rouvrir sans perdre la page active.
 
 Six thèmes sombres sont disponibles dans **Paramètres > Apparence**. Le thème par défaut est **Sombre bleu**. Le même écran permet de choisir **Écran 15 pouces** pour une vue très compacte ou **Écran 27 pouces** pour agrandir graphiques et tableaux.
 

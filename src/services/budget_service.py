@@ -73,15 +73,34 @@ def supprimer_mois_budget(mois: str) -> int:
     return int(curseur.rowcount)
 
 
-def enregistrer_budgets(valeurs: list[dict]) -> None:
+def enregistrer_budgets(valeurs: list[dict]) -> int:
+    lignes: list[tuple[float, int]] = []
+    identifiants: set[int] = set()
+    for numero, ligne in enumerate(valeurs, start=1):
+        try:
+            identifiant = int(ligne["id"])
+            budget_prevu = float(ligne["budget_prevu"])
+        except (KeyError, TypeError, ValueError) as erreur:
+            raise ValueError(f"Ligne budget {numero} invalide.") from erreur
+        if identifiant in identifiants:
+            raise ValueError(f"Le budget n°{identifiant} est présent plusieurs fois.")
+        if budget_prevu < 0:
+            raise ValueError(f"Le budget n°{identifiant} ne peut pas être négatif.")
+        identifiants.add(identifiant)
+        lignes.append((budget_prevu, identifiant))
+    if not lignes:
+        return 0
     horodatage = maintenant()
     with connexion_db() as connexion:
-        for ligne in valeurs:
-            connexion.execute(
+        for budget_prevu, identifiant in lignes:
+            curseur = connexion.execute(
                 """UPDATE budgets SET budget_prevu = ?, updated_at = ?
                    WHERE id = ?""",
-                (max(0.0, float(ligne["budget_prevu"])), horodatage, int(ligne["id"])),
+                (budget_prevu, horodatage, identifiant),
             )
+            if curseur.rowcount != 1:
+                raise ValueError(f"Le budget n°{identifiant} est introuvable.")
+    return len(lignes)
 
 
 def rapport_budget(

@@ -12,15 +12,15 @@ def couleurs_actives(parametres: dict) -> dict[str, str]:
 
 CONFIGURATIONS_AFFICHAGE = {
     "ecran_15": {
-        "chart_height": 285,
-        "secondary_chart_height": 235,
+        "chart_height": 240,
+        "secondary_chart_height": 180,
         "table_height": 310,
         "preview_height": 185,
         "grid_height": 330,
     },
     "ecran_27": {
-        "chart_height": 420,
-        "secondary_chart_height": 350,
+        "chart_height": 280,
+        "secondary_chart_height": 210,
         "table_height": 520,
         "preview_height": 265,
         "grid_height": 520,
@@ -82,7 +82,7 @@ def appliquer_configuration_affichage(parametres: dict) -> None:
         .kpi-title { margin-bottom: .25rem; }
         .kpi-value { font-size: 1.2rem; }
         .kpi-detail { margin-top: .2rem; }
-        .app-panel, .summary-card { padding: .65rem .8rem; margin: .2rem 0 .45rem; }
+        .app-panel { padding: .65rem .8rem; margin: .2rem 0 .45rem; }
         div[data-testid="stForm"] { padding: .75rem; }
         .stButton > button, .stFormSubmitButton > button,
         [data-testid="stDownloadButton"] > button { min-height: 2.35rem; padding: .35rem .75rem; }
@@ -101,22 +101,16 @@ def carte_kpi(
     couleur: str,
     detail: str = "",
 ) -> None:
-    conteneur.markdown(
-        f"""<div class="kpi-card" style="--kpi-color:{escape(couleur)}">
-        <div class="kpi-title">{escape(titre)}</div>
-        <div class="kpi-value">{escape(valeur)}</div>
-        <div class="kpi-detail">{escape(detail) if detail else '&nbsp;'}</div>
-        </div>""",
-        unsafe_allow_html=True,
+    detail_html = (
+        f'<div class="kpi-detail">{escape(detail)}</div>' if detail else ""
     )
-
-
-def bloc_resume(phrases: list[str]) -> None:
-    contenu = " ".join(escape(phrase) for phrase in phrases)
-    st.markdown(
-        f'<div class="summary-card"><strong>Résumé du mois</strong><br>{contenu}</div>',
-        unsafe_allow_html=True,
+    html = (
+        f'<div class="kpi-card" style="--kpi-color:{escape(couleur)}">'
+        f'<div class="kpi-title">{escape(titre)}</div>'
+        f'<div class="kpi-value">{escape(valeur)}</div>'
+        f'{detail_html}</div>'
     )
+    conteneur.markdown(html, unsafe_allow_html=True)
 
 
 def styliser_graphique(
@@ -133,9 +127,9 @@ def styliser_graphique(
     elif format_axe_y and "%" in format_axe_y:
         tickformat, ticksuffix = ".0f", " %"
     figure.update_layout(
-        title={"text": titre or "", "font": {"size": 17}},
+        title={"text": titre or "", "font": {"size": 14}},
         height=hauteur or 420,
-        margin=dict(l=28, r=22, t=52 if titre else 28, b=38),
+        margin=dict(l=22, r=12, t=36 if titre else 18, b=48),
         paper_bgcolor=couleurs["couleur_carte"],
         plot_bgcolor=couleurs["couleur_bloc"],
         font={"color": couleurs["couleur_texte"], "size": 13},
@@ -145,8 +139,8 @@ def styliser_graphique(
             "bordercolor": couleurs["couleur_bordure"],
         },
         legend={
-            "orientation": "h", "yanchor": "bottom", "y": 1.02,
-            "xanchor": "left", "x": 0,
+            "orientation": "h", "yanchor": "top", "y": -0.13,
+            "xanchor": "right", "x": 1,
         },
         coloraxis_showscale=False,
     )

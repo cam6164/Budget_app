@@ -1,9 +1,11 @@
 from datetime import date
+from html import escape
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from src.navigation import recharger_page
 from src.services.budget_service import mois_budget_disponibles
 from src.services.tableau_de_bord_service import (
     alertes_budget,
@@ -13,15 +15,12 @@ from src.services.tableau_de_bord_service import (
     historique_mensuel,
     indicateurs,
     phrases_comparatif,
-    resume_automatique,
 )
 from src.services.transactions_service import mois_disponibles
 from src.ui_styles import (
-    bloc_resume,
     carte_kpi,
     couleurs_actives,
     hauteur_graphique,
-    hauteur_tableau,
     styliser_graphique,
 )
 from src.utils import euros, libelle_mois, mois_canonique
@@ -98,6 +97,19 @@ def _graphique_historique(
             )
         figure.update_layout(barmode="group")
         titre, format_y = "Revenus, dépenses et épargne nette", ",.0f €"
+    elif choix == "Évolution du solde d’épargne":
+        figure.add_trace(
+            go.Scatter(
+                x=historique["libelle_mois"], y=historique["solde_epargne"],
+                mode="lines+markers", name="Solde d’épargne",
+                fill="tozeroy",
+                line={"color": couleurs["couleur_graphique_1"], "width": 3},
+                fillcolor=couleurs["couleur_bloc"],
+                marker={"size": 7},
+                hovertemplate="%{x}<br>Solde : %{y:,.2f} €<extra></extra>",
+            )
+        )
+        titre, format_y = "Évolution du solde d’épargne", ",.0f €"
     else:
         figure.add_trace(
             go.Scatter(
@@ -112,11 +124,14 @@ def _graphique_historique(
     return styliser_graphique(figure, couleurs, titre, format_y, hauteur)
 
 
-def _afficher_comparatif(mois: str, table_height: int) -> None:
+def _afficher_comparatif(mois: str) -> None:
     comparatif = comparaison_mois_precedent(mois)
-    st.subheader("Comparatif M-1")
     if not comparatif["disponible"]:
-        st.info("Pas encore de données pour le mois précédent.")
+        st.markdown(
+            '<section class="dashboard-panel"><h3>Comparatif M-1</h3>'
+            '<p class="dashboard-empty">Pas encore de données pour M-1.</p></section>',
+            unsafe_allow_html=True,
+        )
         return
     noms = [
         ("Revenus", "revenus", "monnaie"),
@@ -127,7 +142,6 @@ def _afficher_comparatif(mois: str, table_height: int) -> None:
     ]
     lignes = []
     for libelle, cle, format_valeur in noms:
-        evolution = comparatif["evolutions"][cle]
         if format_valeur == "pourcentage":
             courant = f"{comparatif['courant'][cle]:.1%}"
             precedent = f"{comparatif['precedent'][cle]:.1%}"
@@ -136,134 +150,263 @@ def _afficher_comparatif(mois: str, table_height: int) -> None:
             courant = euros(comparatif["courant"][cle])
             precedent = euros(comparatif["precedent"][cle])
             ecart = euros(comparatif["ecarts"][cle])
-        lignes.append(
-            {
-                "Indicateur": libelle,
-                libelle_mois(mois): courant,
-                libelle_mois(comparatif["mois_precedent"]): precedent,
-                "Écart": ecart,
-                "Évolution": "—" if evolution is None else f"{evolution:+.1%}",
-            }
-        )
-    st.dataframe(
-        pd.DataFrame(lignes), hide_index=True, width="stretch", height=table_height
+        lignes.append((libelle, courant, precedent, ecart))
+    corps = "".join(
+        "<tr>"
+        f"<th>{escape(libelle)}</th><td>{escape(courant)}</td>"
+        f"<td>{escape(precedent)}</td><td>{escape(ecart)}</td>"
+        "</tr>"
+        for libelle, courant, precedent, ecart in lignes
     )
-    for phrase in phrases_comparatif(comparatif):
-        st.caption(phrase)
+    phrases = phrases_comparatif(comparatif)
+    synthese = escape(phrases[0]) if phrases else ""
+    st.markdown(
+        '<section class="dashboard-panel comparison-panel">'
+        '<h3>Comparatif M-1</h3><table class="comparison-table">'
+        f'<thead><tr><th></th><th>{escape(libelle_mois(mois))}</th>'
+        f'<th>{escape(libelle_mois(comparatif["mois_precedent"]))}</th><th>Écart</th></tr></thead>'
+        f'<tbody>{corps}</tbody></table><p class="panel-note">{synthese}</p></section>',
+        unsafe_allow_html=True,
+    )
 
 
 def _afficher_alertes(
     mois: str, seuil_vigilance: float, seuil_alerte: float
 ) -> None:
-    st.subheader("Alertes budget")
-    for alerte in alertes_budget(mois, seuil_vigilance, seuil_alerte):
-        if alerte["niveau"] == "ok":
-            st.success(alerte["message"])
-        elif alerte["niveau"] == "vigilance":
-            st.warning(alerte["message"])
+    donnees_categories = {
+        ligne["categorie"]: ligne for ligne in comparaison_categories(mois)
+    }
+    elements = []
+    alertes = alertes_budget(mois, seuil_vigilance, seuil_alerte)
+    for alerte in alertes[:6]:
+        categorie = alerte.get("categorie")
+        ligne = donnees_categories.get(categorie, {})
+        if alerte["type"] == "depassement":
+            message = f"{categorie} : +{euros(float(ligne.get('reel', 0)) - float(ligne.get('budget_prevu', 0)))} vs budget"
+        elif alerte["type"] == "vigilance":
+            prevu = float(ligne.get("budget_prevu", 0))
+            ratio = float(ligne.get("reel", 0)) / prevu if prevu else 0
+            message = f"{categorie} : {ratio:.0%} utilisé"
+        elif alerte["type"] == "aucun_budget":
+            message = f"{categorie} : dépense sans budget"
+        elif alerte["type"] == "reste_negatif":
+            message = "Reste disponible négatif"
+        elif alerte["type"] == "aucune":
+            message = "Aucune alerte budget"
         else:
-            st.error(alerte["message"])
+            message = alerte["message"]
+        classe = "ok" if alerte["niveau"] == "ok" else (
+            "warning" if alerte["niveau"] == "vigilance" else "danger"
+        )
+        elements.append(
+            f'<li class="alert-{classe}"><span></span>{escape(message)}</li>'
+        )
+    if len(alertes) > 6:
+        elements.append(f'<li class="alert-more">+{len(alertes) - 6} autre(s)</li>')
+    st.markdown(
+        '<section class="dashboard-panel alerts-panel"><h3>Alertes budget</h3>'
+        f'<ul class="compact-alerts">{"".join(elements)}</ul></section>',
+        unsafe_allow_html=True,
+    )
 
 
-def _graphique_categories(
-    mois: str, couleurs: dict[str, str], hauteur: int
-) -> go.Figure | None:
+def _afficher_budget_categories(
+    mois: str, couleurs: dict[str, str], colonnes: int
+) -> None:
     comparaison = comparaison_categories(mois)
     if not comparaison:
-        return None
-    categories = [ligne["categorie"] for ligne in comparaison]
-    prevus = [ligne["budget_prevu"] for ligne in comparaison]
-    reels = [ligne["reel"] for ligne in comparaison]
-    couleurs_reelles = [
-        couleurs["couleur_negative"] if ligne["depassement"] else couleurs["couleur_positive"]
-        for ligne in comparaison
-    ]
-    figure = go.Figure()
-    figure.add_trace(
-        go.Bar(
-            x=categories, y=prevus, name="Budget prévu",
-            marker_color=couleurs["couleur_graphique_2"],
-            hovertemplate="%{x}<br>Prévu : %{y:,.2f} €<extra></extra>",
+        st.markdown(
+            '<section class="budget-excel"><h3>Budget prévu vs réel</h3>'
+            '<p class="dashboard-empty">Aucune catégorie à comparer.</p></section>',
+            unsafe_allow_html=True,
         )
-    )
-    figure.add_trace(
-        go.Bar(
-            x=categories, y=reels, name="Dépenses réelles",
-            marker_color=couleurs_reelles,
-            hovertemplate="%{x}<br>Réel : %{y:,.2f} €<extra></extra>",
+        return
+    cartes = []
+    for ligne in comparaison:
+        prevu = max(0.0, float(ligne["budget_prevu"]))
+        reel = float(ligne["reel"])
+        reel_barre = max(0.0, reel)
+        maximum = max(prevu, reel_barre, 1.0)
+        largeur_prevu = min(100.0, prevu / maximum * 100)
+        largeur_reel = min(100.0, reel_barre / maximum * 100)
+        ratio = reel / prevu if prevu > 0 else None
+        pourcentage = f"{ratio:.0%}" if ratio is not None else "Sans budget"
+        couleur_reel = (
+            couleurs["couleur_negative"]
+            if ligne["depassement"] else couleurs["couleur_positive"]
         )
-    )
-    figure.update_layout(barmode="group")
-    return styliser_graphique(
-        figure, couleurs,
-        "Budget prévu vs dépenses réelles par catégorie", ",.0f €", hauteur,
+        cartes.append(
+            '<article class="budget-category">'
+            f'<header><strong>{escape(str(ligne["categorie"]))}</strong>'
+            f'<span class="category-ratio">{escape(pourcentage)}</span></header>'
+            '<div class="budget-row"><span>Prévu</span><div class="bar-track">'
+            f'<i style="width:{largeur_prevu:.1f}%;background:{couleurs["couleur_graphique_2"]}"></i>'
+            f'</div><b>{escape(euros(prevu))}</b></div>'
+            '<div class="budget-row"><span>Réel</span><div class="bar-track">'
+            f'<i style="width:{largeur_reel:.1f}%;background:{couleur_reel}"></i>'
+            f'</div><b style="color:{couleur_reel}">{escape(euros(reel))}</b></div>'
+            '</article>'
+        )
+    st.markdown(
+        '<section class="budget-excel"><h3>Budget prévu vs dépenses réelles</h3>'
+        f'<div class="budget-excel-grid cols-{colonnes}">{"".join(cartes)}</div></section>',
+        unsafe_allow_html=True,
     )
 
 
 def afficher(parametres: dict) -> None:
     couleurs = couleurs_actives(parametres)
     hauteur_principale = hauteur_graphique(parametres)
-    hauteur_secondaire = hauteur_graphique(parametres, secondaire=True)
-    st.title("Tableau de bord")
+    mode_27_pouces = parametres.get("configuration_affichage") == "ecran_27"
+    colonnes_budget = 4 if mode_27_pouces else 3
+    st.markdown(
+        """<style>
+        .block-container { max-width: 1900px; padding: .3rem .7rem .55rem; }
+        [data-testid="stVerticalBlock"] { gap: .32rem; }
+        [data-testid="stHorizontalBlock"] { gap: .5rem; }
+        .dashboard-title {
+            width: 100%; margin: .15rem 0 .35rem !important;
+            text-align: center; font-size: 1.72rem !important;
+            line-height: 1.15; letter-spacing: -.025em;
+        }
+        .kpi-card { min-height: 67px; padding: .48rem .62rem; border-radius: 10px; }
+        .kpi-card::after { height: 3px; }
+        .kpi-title { margin-bottom: .18rem; font-size: .78rem; white-space: nowrap; }
+        .kpi-value { font-size: 1.12rem; }
+        .dashboard-panel, .budget-excel {
+            background: var(--app-carte); border: 1px solid var(--app-bordure);
+            border-radius: 10px; padding: .42rem .55rem;
+        }
+        .dashboard-panel h3, .budget-excel h3 {
+            font-size: .9rem !important; margin: 0 0 .28rem !important;
+            color: var(--app-principale);
+        }
+        .comparison-table { width: 100%; border-collapse: collapse; font-size: .69rem; }
+        .comparison-table th, .comparison-table td {
+            padding: .14rem .2rem; border-bottom: 1px solid var(--app-bordure);
+            text-align: right; white-space: nowrap;
+        }
+        .comparison-table th:first-child { text-align: left; }
+        .comparison-table thead th { color: var(--app-texte-secondaire); font-weight: 600; }
+        .panel-note, .dashboard-empty {
+            color: var(--app-texte-secondaire); font-size: .68rem; line-height: 1.2;
+            margin: .25rem 0 0;
+        }
+        .alerts-panel { margin-top: .75rem; }
+        .compact-alerts { list-style: none; margin: 0; padding: 0; }
+        .compact-alerts li {
+            display: flex; align-items: center; gap: .35rem; font-size: .72rem;
+            line-height: 1.2; padding: .12rem 0; color: var(--app-texte);
+        }
+        .compact-alerts li span { width: .42rem; height: .42rem; border-radius: 50%; flex: none; }
+        .compact-alerts .alert-ok span { background: var(--app-positive); }
+        .compact-alerts .alert-warning span { background: var(--app-vigilance); }
+        .compact-alerts .alert-danger span { background: var(--app-negative); }
+        .compact-alerts .alert-more { color: var(--app-texte-secondaire); }
+        .budget-excel { padding-bottom: .5rem; }
+        .budget-excel-grid {
+            display: grid; gap: .38rem; grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .budget-excel-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .budget-category {
+            background: var(--app-bloc); border: 1px solid var(--app-bordure);
+            border-radius: 8px; padding: .3rem .4rem;
+        }
+        .budget-category header {
+            display: flex; justify-content: space-between; gap: .4rem;
+            font-size: .75rem; margin-bottom: .18rem;
+        }
+        .category-ratio { color: var(--app-principale); font-weight: 700; white-space: nowrap; }
+        .budget-row {
+            display: grid; grid-template-columns: 2.6rem minmax(35px, 1fr) 4.7rem;
+            align-items: center; gap: .25rem; font-size: .66rem; line-height: 1.35;
+        }
+        .budget-row b { text-align: right; white-space: nowrap; font-weight: 650; }
+        .bar-track { height: .38rem; border-radius: 999px; background: var(--app-carte); overflow: hidden; }
+        .bar-track i { display: block; height: 100%; border-radius: inherit; }
+        @media (max-width: 1200px) {
+            .budget-excel-grid, .budget-excel-grid.cols-3 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        </style>""",
+        unsafe_allow_html=True,
+    )
+    if mode_27_pouces:
+        st.markdown(
+            """<style>
+            .block-container { padding-top: .42rem; padding-bottom: .65rem; }
+            [data-testid="stVerticalBlock"] { gap: .48rem; }
+            [data-testid="stHorizontalBlock"] { gap: .62rem; }
+            .dashboard-title { margin-bottom: .42rem !important; }
+            .kpi-card { min-height: 65px; }
+            .dashboard-panel, .budget-excel { padding: .46rem .58rem; }
+            .alerts-panel { margin-top: .9rem; }
+            .budget-excel-grid { gap: .44rem; }
+            </style>""",
+            unsafe_allow_html=True,
+        )
     mois = sorted(set(mois_budget_disponibles()) | set(mois_disponibles()))
     if not mois:
         mois = [mois_canonique(date.today())]
-    col_mois, col_actualiser = st.columns([4, 1])
-    selection = col_mois.selectbox(
-        "Mois budget", mois, index=len(mois) - 1, format_func=libelle_mois
+    if st.session_state.get("mois_tableau_de_bord") not in mois:
+        st.session_state["mois_tableau_de_bord"] = mois[-1]
+    col_commandes, col_titre, _ = st.columns(
+        [1.25, 3.5, 1.25], vertical_alignment="top"
     )
-    if col_actualiser.button("Actualiser", width="stretch"):
-        st.rerun()
+    with col_commandes:
+        if st.button("Actualiser", width="stretch"):
+            recharger_page("Tableau de bord")
+        selection = st.selectbox(
+            "Mois budget", mois, format_func=libelle_mois,
+            key="mois_tableau_de_bord",
+        )
+    with col_titre:
+        st.markdown(
+            '<h1 class="dashboard-title">Tableau de bord</h1>',
+            unsafe_allow_html=True,
+        )
 
     kpi = indicateurs(selection)
     colonnes = st.columns(6, gap="small")
     cartes = [
-        ("Revenus du mois", euros(kpi["revenus"]), couleurs["couleur_positive"], "Revenus réalisés"),
-        ("Budget du mois", euros(kpi["budget_depenses"]), couleurs["couleur_secondaire"], "Dépenses prévues"),
-        ("Dépenses du mois", euros(kpi["depenses"]), couleurs["couleur_graphique_2"], "Remboursements inclus"),
-        ("Reste disponible", euros(kpi["reste_disponible"]), couleurs["couleur_positive"] if kpi["reste_disponible"] >= 0 else couleurs["couleur_negative"], "Après dépenses et épargne"),
-        ("Épargne nette", euros(kpi["epargne_nette"]), couleurs["couleur_positive"] if kpi["epargne_nette"] >= 0 else couleurs["couleur_negative"], "Versements moins retraits"),
-        ("Taux d’épargne", f"{kpi['taux_epargne']:.1%}", couleurs["couleur_graphique_3"], "Sur les revenus du mois"),
+        ("Revenus du mois", euros(kpi["revenus"]), couleurs["couleur_positive"]),
+        ("Budget du mois", euros(kpi["budget_depenses"]), couleurs["couleur_secondaire"]),
+        ("Dépenses du mois", euros(kpi["depenses"]), couleurs["couleur_graphique_2"]),
+        ("Reste disponible", euros(kpi["reste_disponible"]), couleurs["couleur_positive"] if kpi["reste_disponible"] >= 0 else couleurs["couleur_negative"]),
+        ("Épargne nette", euros(kpi["epargne_nette"]), couleurs["couleur_positive"] if kpi["epargne_nette"] >= 0 else couleurs["couleur_negative"]),
+        ("Taux d’épargne", f"{kpi['taux_epargne']:.1%}", couleurs["couleur_graphique_3"]),
     ]
-    for colonne, (titre, valeur, couleur, detail) in zip(colonnes, cartes):
-        carte_kpi(colonne, titre, valeur, couleur, detail)
+    for colonne, (titre, valeur, couleur) in zip(colonnes, cartes):
+        carte_kpi(colonne, titre, valeur, couleur)
 
-    st.subheader("Analyse graphique")
-    choix = st.radio(
-        "Vue graphique",
-        ["Suivi du mois", "Dépenses par mois", "Équilibre mensuel", "Taux d’épargne"],
-        horizontal=True,
-        label_visibility="collapsed",
-    )
     historique = pd.DataFrame(
         historique_mensuel(float(parametres.get("solde_initial_epargne", 0)))
     )
     if not historique.empty:
         historique["libelle_mois"] = historique["mois"].map(libelle_mois)
-    with st.container(border=True):
+    seuil_vigilance = float(parametres.get("seuil_vigilance_budget", 0.8))
+    seuil_alerte = float(parametres.get("seuil_alerte_budget", 1.0))
+    col_graphique, col_infos = st.columns([2.15, 1], gap="medium")
+    with col_graphique:
+        choix = st.selectbox(
+            "Graphique principal",
+            [
+                "Évolution des dépenses cumulées du mois",
+                "Dépenses par mois",
+                "Équilibre mensuel",
+                "Taux d’épargne par mois",
+                "Évolution du solde d’épargne",
+            ],
+        )
         figure = (
             _graphique_suivi(selection, couleurs, hauteur_principale)
-            if choix == "Suivi du mois"
+            if choix == "Évolution des dépenses cumulées du mois"
             else _graphique_historique(choix, historique, couleurs, hauteur_principale)
         )
         st.plotly_chart(figure, width="stretch", key=f"graphique_principal_{choix}")
-
-    seuil_vigilance = float(parametres.get("seuil_vigilance_budget", 0.8))
-    seuil_alerte = float(parametres.get("seuil_alerte_budget", 1.0))
-    col_comparatif, col_alertes, col_resume = st.columns(3, gap="medium")
-    with col_comparatif:
-        _afficher_comparatif(selection, min(hauteur_tableau(parametres), 235))
-    with col_alertes:
+    with col_infos:
+        _afficher_comparatif(selection)
         _afficher_alertes(selection, seuil_vigilance, seuil_alerte)
-    with col_resume:
-        st.subheader("Résumé du mois")
-        bloc_resume(resume_automatique(selection, seuil_vigilance, seuil_alerte))
 
-    st.subheader("Détail par catégorie")
-    graphique_categories = _graphique_categories(
-        selection, couleurs, hauteur_secondaire
-    )
-    if graphique_categories is None:
-        st.info("Créez le budget du mois ou ajoutez des dépenses pour afficher cette comparaison.")
-    else:
-        st.plotly_chart(graphique_categories, width="stretch", key="graphique_categories")
+    _afficher_budget_categories(selection, couleurs, colonnes_budget)

@@ -17,11 +17,15 @@ Fournir une application locale en français pour suivre les revenus, dépenses, 
 - calculs mensuels de réel, écart, utilisation et statut ;
 - suivi d’épargne avec soldes chaînés ;
 - tableau de bord avec six KPI et cinq visualisations ;
-- quatre graphiques interchangeables utilisant le thème actif et un graphique par catégorie séparé ;
+- cinq graphiques interchangeables utilisant le thème actif, dont le solde d’épargne ;
+- grille compacte budget prévu/réel par catégorie, avec barres horizontales et dépassements visibles ;
 - alertes détaillées, comparatif complet M-1 et résumé automatique local ;
 - six thèmes sombres complets et configurations compactes pour écrans 15 ou 27 pouces ;
 - suivi d’épargne enrichi de cartes mensuelles et d’une courbe de solde ;
 - paramètres, sauvegarde, restauration et export CSV.
+- navigation persistante après ajout, modification, import ou suppression ;
+- menu latéral refermable et réouvrable par une poignée propre à l’application ;
+- page Épargne centrée sur le tableau mensuel, les analyses graphiques étant regroupées dans le Tableau de bord.
 
 ## Règles essentielles
 

@@ -86,7 +86,13 @@ def appliquer_theme(nom: str) -> None:
         }}
         html, body, [class*="css"] {{ font-size: 16px; }}
         .stApp {{ background: var(--app-fond); color: var(--app-texte); }}
-        .block-container {{ max-width: 1540px; padding-top: 1.6rem; padding-bottom: 3rem; }}
+        [data-testid="stHeader"], [data-testid="stDecoration"],
+        [data-testid="stToolbar"], [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapseButton"],
+        [data-testid="stSidebarCollapsed"] {{
+            display: none !important;
+        }}
+        .block-container {{ max-width: 1680px; padding-top: .55rem; padding-bottom: 1.2rem; }}
         [data-testid="stSidebar"] {{
             background: {c['couleur_carte']};
             border-right: 1px solid var(--app-bordure);
@@ -98,13 +104,17 @@ def appliquer_theme(nom: str) -> None:
             width: 100%; justify-content: flex-start; border-radius: 7px;
             min-height: 2.45rem; margin: .08rem 0; font-size: 1.06rem;
         }}
+        [data-testid="stSidebar"] .st-key-sidebar_close button {{
+            justify-content: center; min-height: 2rem; padding: .15rem .35rem;
+            font-size: 1.35rem;
+        }}
         h1 {{ font-size: 2rem !important; letter-spacing: -.025em; margin-bottom: .75rem !important; }}
         h2 {{ font-size: 1.42rem !important; margin-top: 1.7rem !important; }}
         h3 {{ font-size: 1.12rem !important; }}
         h1, h2, h3, p, label, span, [data-testid="stCaptionContainer"] {{ color: var(--app-texte); }}
         [data-testid="stCaptionContainer"], small {{ color: var(--app-texte-secondaire) !important; }}
         [data-testid="stMetric"], div[data-testid="stForm"], .budget-card,
-        .app-panel, .kpi-card, .summary-card {{
+        .app-panel, .kpi-card {{
             background: var(--app-carte);
             border: 1px solid var(--app-bordure);
             border-radius: 15px;
@@ -116,7 +126,6 @@ def appliquer_theme(nom: str) -> None:
         .budget-card {{ min-height: 145px; margin-bottom: .75rem; padding: 1rem; }}
         .budget-card h3 {{ color: var(--app-principale); margin-top: 0; }}
         .app-panel {{ padding: 1rem 1.15rem; margin: .4rem 0 1rem; }}
-        .summary-card {{ padding: 1rem 1.2rem; border-left: 5px solid var(--app-principale); }}
         .kpi-card {{ min-height: 118px; padding: 1rem; position: relative; overflow: hidden; }}
         .kpi-card::after {{ content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 4px; background: var(--kpi-color); }}
         .kpi-title {{ color: var(--app-texte-secondaire); font-size: .88rem; font-weight: 650; margin-bottom: .55rem; }}

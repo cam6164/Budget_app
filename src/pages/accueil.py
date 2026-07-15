@@ -1,5 +1,7 @@
 import streamlit as st
 
+from src.navigation import recharger_page
+
 
 def afficher(_parametres: dict) -> None:
     st.title("Accueil")
@@ -13,8 +15,7 @@ def afficher(_parametres: dict) -> None:
             unsafe_allow_html=True,
         )
         if st.button("Ouvrir le suivi budget", type="primary", width="stretch"):
-            st.session_state["navigation_cible"] = "Tableau de bord"
-            st.rerun()
+            recharger_page("Tableau de bord")
     with col_courses:
         st.markdown(
             """<div class="budget-card"><h3>Courses et recettes</h3>

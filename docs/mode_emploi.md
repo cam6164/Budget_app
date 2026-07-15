@@ -14,10 +14,15 @@ La zone centrale n’affiche qu’un graphique à la fois :
 - **Dépenses par mois** montre la tendance chronologique ;
 - **Équilibre mensuel** compare revenus, dépenses et épargne nette ;
 - **Taux d’épargne** suit le pourcentage épargné.
+- **Évolution du solde d’épargne** reprend le solde mensuel calculé dynamiquement.
 
-Le bloc **Comparatif M-1** détaille les valeurs du mois, celles du mois précédent, les écarts et évolutions. **Alertes budget** signale dépassements, seuils de vigilance, dépenses sans budget et reste négatif. **Résumé du mois** assemble quelques constats automatiques sans utiliser de service externe.
+Le bloc **Comparatif M-1** détaille les valeurs du mois, celles du mois précédent, les écarts et évolutions. **Alertes budget** signale dépassements, seuils de vigilance, dépenses sans budget et reste négatif.
 
-En bas, le graphique par catégorie exclut les lignes entièrement vides et colore les dépenses dépassant le budget.
+En bas, une grille compacte présente chaque catégorie avec deux barres horizontales **Prévu** et **Réel**, les montants et le pourcentage utilisé. Les dépassements sont colorés.
+
+## Ouvrir et fermer le menu
+
+La flèche **‹** placée près de **Budget personnel** masque le menu latéral. Une poignée **☰** reste visible sur le bord gauche pour le rouvrir. La page en cours ne change pas.
 
 ## Lancer l’application
 
@@ -25,15 +30,21 @@ Installez Python 3.11 ou 3.12, puis double-cliquez sur `start_app.bat`. Le premi
 
 ## Créer le premier budget
 
-Ouvrez **Budget mensuel**, choisissez l’année et le mois dans la vue annuelle simplifiée, puis cliquez sur **Créer le premier budget**. Une ligne à 0 € est créée pour chaque catégorie active de revenu, dépense et épargne. Modifiez la colonne **Budget prévu**, puis enregistrez. Le bouton **Créer le mois suivant** recopie les montants du dernier mois.
+Ouvrez **Budget mensuel**, choisissez librement l’année et le mois de départ, puis cliquez sur **Créer le premier budget**. Une ligne à 0 € est créée pour chaque catégorie active. Le mois choisi reste sélectionné. Modifiez ensuite plusieurs valeurs dans **Budget prévu** puis cliquez sur **Enregistrer les modifications** : l’écriture est terminée en base avant le rechargement de la page.
 
 En V2, le tableau est protégé en lecture par défaut. Cliquez sur **Modifier les budgets** pour activer l’édition ; les statuts OK, Vigilance et Dépassement restent visibles et utilisent les seuils définis dans Paramètres.
 
-Le bouton **Supprimer un mois** ouvre une confirmation. Une sauvegarde est créée avant de supprimer uniquement les prévisions du mois ; les transactions restent intactes.
+Le bouton **Supprimer un mois budget** ouvre une confirmation. Une sauvegarde est créée avant de supprimer uniquement les prévisions du mois ; les transactions restent intactes et la page Budget mensuel reste active.
 
 ## Ajouter une transaction
 
 Ouvrez **Transactions** puis **Ajouter une transaction**. Le formulaire s’ouvre dans une fenêtre compacte. Choisissez le type avant de le remplir : la liste de catégories se met à jour depuis la base locale. Saisissez toujours un montant positif ; l’application applique elle-même le bon signe bancaire et budgétaire.
+
+Les champs **Année (pour Autre)** et **Mois (pour Autre)** restent masqués tant que le mode de mois budget n’est pas **Autre**.
+
+## Consulter l’épargne
+
+La page **Épargne** affiche le tableau mensuel complet. Le graphique de solde est regroupé avec les autres analyses dans le **Tableau de bord**.
 
 Pour un remboursement, indiquez le sens et la catégorie de dépense concernée. Pour un salaire daté à partir du 18, le mode **Automatique** propose le mois suivant.
 

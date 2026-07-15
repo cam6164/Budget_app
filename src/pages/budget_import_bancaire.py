@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from src.config import MOYENS_PAIEMENT, SENS_REMBOURSEMENT, STATUTS_IMPORT, TYPES_TRANSACTION
+from src.navigation import recharger_page
 from src.services.categories_service import noms_categories
 from src.services.import_bancaire_service import (
     ErreurValidationImport,
@@ -271,7 +272,7 @@ def afficher(parametres: dict) -> None:
                 st.session_state["message_import_bancaire"] = (
                     "Aucune transaction n’a été importée : aucune ligne sélectionnée et validable."
                 )
-            st.rerun()
+            recharger_page("Import bancaire")
         except ErreurValidationImport as erreur:
             st.error(
                 f"Validation interrompue à l’étape « {erreur.etape} » : "
@@ -284,4 +285,4 @@ def afficher(parametres: dict) -> None:
             )
     if col_annuler.button("Annuler la préparation", width="stretch"):
         st.session_state.pop("transactions_import_preparees", None)
-        st.rerun()
+        recharger_page("Import bancaire")

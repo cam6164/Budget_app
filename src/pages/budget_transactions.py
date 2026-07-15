@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from src.config import MOYENS_PAIEMENT, SENS_REMBOURSEMENT, TYPES_TRANSACTION
+from src.navigation import recharger_page
 from src.services.budget_service import mois_budget_disponibles
 from src.services.categories_service import noms_categories
 from src.services.transactions_service import (
@@ -32,10 +33,22 @@ def _texte_cellule(valeur: object) -> str:
     return "" if pd.isna(valeur) else str(valeur)
 
 
-@st.dialog("Ajouter une transaction")
+def _fermer_dialogue_transaction() -> None:
+    st.session_state["dialogue_ajout_transaction_ouvert"] = False
+
+
+@st.dialog(
+    "Ajouter une transaction", width="large", on_dismiss=_fermer_dialogue_transaction
+)
 def _dialog_ajout_transaction() -> None:
-    type_transaction = st.selectbox(
+    col_type, col_mois_budget = st.columns(2)
+    type_transaction = col_type.selectbox(
         "Type", TYPES_TRANSACTION, key="type_nouvelle_transaction_dialogue"
+    )
+    mode_mois = col_mois_budget.selectbox(
+        "Mois budget",
+        ["Automatique", "M-2", "M-1", "M", "M+1", "M+2", "Autre"],
+        key="mode_mois_nouvelle_transaction_dialogue",
     )
     categories = noms_categories(type_transaction, True)
     categories_depense = noms_categories("Dépense", True)
@@ -53,36 +66,45 @@ def _dialog_ajout_transaction() -> None:
             categorie_remboursee = c2.selectbox(
                 "Catégorie remboursée", categories_depense
             )
-        c1, c2, c3 = st.columns([2, 1, 1.2])
+        c1, c2, c3 = st.columns([2, 1, 1.55])
         libelle = c1.text_input("Libellé")
         montant = c2.number_input("Montant", min_value=0.0, step=1.0, format="%.2f")
         moyen = c3.selectbox("Moyen de paiement", MOYENS_PAIEMENT)
-        mode_mois = st.selectbox(
-            "Mois budget",
-            ["Automatique", "M-2", "M-1", "M", "M+1", "M+2", "Autre"],
-        )
-        c1, c2 = st.columns(2)
-        annee = c1.number_input(
-            "Année (pour Autre)", min_value=2000, max_value=2100,
-            value=date_reelle.year, step=1,
-        )
-        numero_mois = c2.selectbox(
-            "Mois (pour Autre)", range(1, 13), index=date_reelle.month - 1,
-            format_func=lambda numero: MOIS_FR[numero - 1],
-        )
+        annee = date_reelle.year
+        numero_mois = date_reelle.month
+        if mode_mois == "Autre":
+            c1, c2 = st.columns(2)
+            annee = int(c1.number_input(
+                "Année (pour Autre)", min_value=2000, max_value=2100,
+                value=date_reelle.year, step=1,
+            ))
+            mois_options = {
+                nom.capitalize(): numero for numero, nom in enumerate(MOIS_FR, 1)
+            }
+            mois_autre = c2.selectbox(
+                "Mois (pour Autre)", list(mois_options), index=date_reelle.month - 1,
+            )
+            numero_mois = mois_options[mois_autre]
         commentaire = st.text_area("Commentaire", height=70)
-        if st.form_submit_button(
+        col_valider, col_annuler = st.columns(2)
+        valider = col_valider.form_submit_button(
             "Enregistrer", type="primary", use_container_width=True,
             disabled=not categories,
-        ):
+        )
+        annuler = col_annuler.form_submit_button("Annuler", use_container_width=True)
+        if annuler:
+            _fermer_dialogue_transaction()
+            recharger_page("Transactions")
+        if valider:
             try:
                 ajouter_transaction(
                     date_reelle, type_transaction, categorie, libelle, montant, moyen,
-                    _mois_manuel(date_reelle, mode_mois, int(annee), int(numero_mois)),
+                    _mois_manuel(date_reelle, mode_mois, annee, numero_mois),
                     commentaire, sens, categorie_remboursee,
                 )
+                _fermer_dialogue_transaction()
                 st.session_state["message_transactions"] = "Transaction ajoutée."
-                st.rerun()
+                recharger_page("Transactions")
             except Exception as erreur:
                 st.error(f"Ajout impossible : {erreur}")
 
@@ -176,7 +198,7 @@ def _editer_transactions(transactions: list[dict], table_height: int) -> None:
             st.session_state["message_transactions"] = (
                 f"{nombre} transaction(s) mise(s) à jour."
             )
-            st.rerun()
+            recharger_page("Transactions")
         except Exception as erreur:
             st.error(f"Modification impossible : {erreur}")
 
@@ -195,7 +217,7 @@ def _editer_transactions(transactions: list[dict], table_height: int) -> None:
             st.session_state["message_transactions"] = (
                 f"{nombre} transaction(s) supprimée(s) après sauvegarde."
             )
-            st.rerun()
+            recharger_page("Transactions")
         except Exception as erreur:
             st.error(f"Suppression impossible : {erreur}")
 
@@ -273,14 +295,19 @@ def afficher(parametres: dict) -> None:
     if not mode_modification and col_ajouter.button(
         "Ajouter une transaction", type="primary", width="stretch"
     ):
-        _dialog_ajout_transaction()
+        st.session_state["dialogue_ajout_transaction_ouvert"] = True
     if transactions:
         libelle_bouton = (
             "Quitter la modification" if mode_modification else "Activer la modification"
         )
         if col_modifier.button(libelle_bouton, width="stretch"):
             st.session_state["mode_modification_transactions"] = not mode_modification
-            st.rerun()
+            recharger_page("Transactions")
+    if (
+        not mode_modification
+        and st.session_state.get("dialogue_ajout_transaction_ouvert", False)
+    ):
+        _dialog_ajout_transaction()
     if not transactions:
         st.info("Aucune transaction ne correspond à la sélection.")
         return

@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from src.config import TYPES_TRANSACTION
+from src.navigation import recharger_page
 from src.services.categories_service import (
     ajouter_categorie,
     lister_categories,
@@ -13,6 +14,9 @@ from src.ui_styles import hauteur_tableau
 
 def afficher(parametres: dict) -> None:
     st.title("Catégories")
+    if notification := st.session_state.pop("message_categories", None):
+        niveau, message = notification
+        (st.warning if niveau == "warning" else st.success)(message)
     st.caption("Les catégories actives alimentent automatiquement les formulaires et les budgets.")
     categories = lister_categories()
     if categories:
@@ -34,8 +38,11 @@ def afficher(parametres: dict) -> None:
             if st.form_submit_button("Ajouter", type="primary", width="stretch"):
                 try:
                     ajouter_categorie(type_categorie, nom, active)
-                    st.success("Catégorie ajoutée. Les mois existants ont été complétés à 0 €.")
-                    st.rerun()
+                    st.session_state["message_categories"] = (
+                        "success",
+                        "Catégorie ajoutée. Les mois existants ont été complétés à 0 €.",
+                    )
+                    recharger_page("Catégories")
                 except Exception as erreur:
                     st.error(str(erreur))
 
@@ -56,8 +63,10 @@ def afficher(parametres: dict) -> None:
             if st.form_submit_button("Enregistrer les modifications", width="stretch"):
                 try:
                     modifier_categorie(selection["id"], nouveau_nom, active_modifiee, int(ordre))
-                    st.success("Catégorie mise à jour.")
-                    st.rerun()
+                    st.session_state["message_categories"] = (
+                        "success", "Catégorie mise à jour."
+                    )
+                    recharger_page("Catégories")
                 except Exception as erreur:
                     st.error(str(erreur))
         with st.expander("Suppression définitive"):
@@ -65,5 +74,7 @@ def afficher(parametres: dict) -> None:
             confirmation = st.checkbox("Je confirme la demande de suppression", key="conf_sup_cat")
             if st.button("Supprimer cette catégorie", disabled=not confirmation):
                 supprimee, message = supprimer_categorie(selection["id"])
-                (st.success if supprimee else st.warning)(message)
-                st.rerun()
+                st.session_state["message_categories"] = (
+                    "success" if supprimee else "warning", message
+                )
+                recharger_page("Catégories")
