@@ -23,10 +23,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-if "sidebar_open" not in st.session_state:
-    st.session_state["sidebar_open"] = True
-
-
 def main() -> None:
     try:
         initialiser_base()

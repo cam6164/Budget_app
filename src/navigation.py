@@ -30,62 +30,21 @@ def afficher_navigation() -> str:
     if page_active not in PAGES:
         page_active = "Accueil"
         definir_page_active(page_active)
-    if "sidebar_open" not in st.session_state:
-        st.session_state["sidebar_open"] = True
-    sidebar_ouverte = bool(st.session_state["sidebar_open"])
-    if not sidebar_ouverte:
-        st.markdown(
-            """<style>
-            [data-testid="stSidebar"] { display: none !important; }
-            .st-key-sidebar_reopen {
-                position: fixed !important;
-                left: 0 !important;
-                top: calc(50vh - 1.5rem) !important;
-                z-index: 2147483647 !important;
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                width: 2.65rem !important;
-                height: 3rem !important;
-                margin: 0 !important;
-                overflow: visible !important;
-            }
-            .st-key-sidebar_reopen button {
-                display: flex !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                align-items: center !important;
-                justify-content: center !important;
-                min-height: 3rem !important;
-                height: 3rem !important;
-                width: 2.65rem !important;
-                padding: 0 !important;
-                border: 1px solid var(--app-principale) !important;
-                border-left: 0 !important;
-                border-radius: 0 10px 10px 0 !important;
-                font-size: 1.3rem !important;
-                background: var(--app-principale) !important;
-                color: var(--app-fond) !important;
-                box-shadow: 0 5px 18px rgba(0,0,0,.45) !important;
-            }
-            .st-key-sidebar_reopen button p,
-            .st-key-sidebar_reopen button span {
-                color: var(--app-fond) !important;
-            }
-            </style>""",
-            unsafe_allow_html=True,
-        )
-        if st.button("☰", key="sidebar_reopen", help="Ouvrir le menu"):
-            st.session_state["sidebar_open"] = True
-            recharger_page(page_active)
-        return page_active
-
+    st.markdown(
+        """<style>
+        [data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
+            transform: translateX(0) !important;
+            width: 300px !important;
+            min-width: 300px !important;
+            max-width: 300px !important;
+        }
+        </style>""",
+        unsafe_allow_html=True,
+    )
     with st.sidebar:
-        col_titre, col_fermer = st.columns([5, 1], vertical_alignment="center")
-        col_titre.markdown("### Budget personnel")
-        if col_fermer.button("‹", key="sidebar_close", help="Fermer le menu"):
-            st.session_state["sidebar_open"] = False
-            recharger_page(page_active)
+        st.markdown("### Budget personnel")
         for page in PAGES:
             if st.button(
                 page,

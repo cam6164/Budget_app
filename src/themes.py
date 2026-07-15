@@ -88,8 +88,7 @@ def appliquer_theme(nom: str) -> None:
         .stApp {{ background: var(--app-fond); color: var(--app-texte); }}
         [data-testid="stHeader"], [data-testid="stDecoration"],
         [data-testid="stToolbar"], [data-testid="collapsedControl"],
-        [data-testid="stSidebarCollapseButton"],
-        [data-testid="stSidebarCollapsed"] {{
+        [data-testid="stSidebarCollapseButton"] {{
             display: none !important;
         }}
         .block-container {{ max-width: 1680px; padding-top: .55rem; padding-bottom: 1.2rem; }}
@@ -103,10 +102,6 @@ def appliquer_theme(nom: str) -> None:
         [data-testid="stSidebar"] .stButton > button {{
             width: 100%; justify-content: flex-start; border-radius: 7px;
             min-height: 2.45rem; margin: .08rem 0; font-size: 1.06rem;
-        }}
-        [data-testid="stSidebar"] .st-key-sidebar_close button {{
-            justify-content: center; min-height: 2rem; padding: .15rem .35rem;
-            font-size: 1.35rem;
         }}
         h1 {{ font-size: 2rem !important; letter-spacing: -.025em; margin-bottom: .75rem !important; }}
         h2 {{ font-size: 1.42rem !important; margin-top: 1.7rem !important; }}
