@@ -4,12 +4,15 @@ import streamlit as st
 from src.config import MOYENS_PAIEMENT, SENS_REMBOURSEMENT, STATUTS_IMPORT, TYPES_TRANSACTION
 from src.services.categories_service import noms_categories
 from src.services.import_bancaire_service import (
+    ErreurValidationImport,
     detecter_colonnes,
     detecter_doublons_import,
+    est_ligne_selectionnee,
     lire_fichier_bancaire,
     preparer_transactions_import,
     valider_import,
 )
+from src.ui_styles import hauteur_apercu, hauteur_tableau
 from src.utils import ajouter_mois, libelle_mois
 
 try:
@@ -30,6 +33,7 @@ INTERNE_VERS_AFFICHAGE = {
     "categorie": "Catégorie",
     "categorie_remboursee": "Catégorie remboursée",
     "libelle": "Libellé",
+    "libelle_bancaire_brut": "Libellé bancaire brut",
     "montant_bancaire": "Montant bancaire",
     "montant_budget": "Montant budget",
     "moyen_paiement": "Moyen de paiement",
@@ -74,12 +78,15 @@ def _editeur_natif(
     categories: list[str],
     categories_depense: list[str],
     mois: list[str],
+    hauteur: int,
 ) -> pd.DataFrame:
     return st.data_editor(
         affichage,
         hide_index=True,
         width="stretch",
         num_rows="fixed",
+        height=hauteur,
+        disabled=["Libellé bancaire brut"],
         column_config={
             "Importer": st.column_config.CheckboxColumn(),
             "Type": st.column_config.SelectboxColumn(options=TYPES_TRANSACTION),
@@ -102,6 +109,7 @@ def _editeur_aggrid(
     categories: list[str],
     categories_depense: list[str],
     mois: list[str],
+    hauteur: int,
 ) -> pd.DataFrame:
     constructeur = GridOptionsBuilder.from_dataframe(affichage)
     constructeur.configure_default_column(editable=True, resizable=True, minWidth=125)
@@ -109,6 +117,7 @@ def _editeur_aggrid(
         "Importer", editable=True,
         cellEditor="agCheckboxCellEditor", cellRenderer="agCheckboxCellRenderer",
     )
+    constructeur.configure_column("Libellé bancaire brut", editable=False)
     listes = {
         "Type": TYPES_TRANSACTION,
         "Sens remboursement": [""] + SENS_REMBOURSEMENT,
@@ -134,14 +143,14 @@ def _editeur_aggrid(
         data_return_mode=DataReturnMode.AS_INPUT,
         fit_columns_on_grid_load=False,
         allow_unsafe_jscode=False,
-        height=min(560, 90 + len(affichage) * 36),
+        height=hauteur,
         theme="streamlit",
         key="table_import_aggrid",
     )
     return pd.DataFrame(reponse["data"])
 
 
-def afficher(_parametres: dict) -> None:
+def afficher(parametres: dict) -> None:
     st.title("Import bancaire")
     st.caption("Import manuel de fichiers CSV ou Excel .xlsx — aucune connexion bancaire.")
     if message := st.session_state.pop("message_import_bancaire", None):
@@ -159,7 +168,10 @@ def afficher(_parametres: dict) -> None:
             return
         st.subheader("Aperçu du fichier")
         st.write(f"{len(brut)} ligne(s), {len(brut.columns)} colonne(s) détectée(s).")
-        st.dataframe(brut.head(20), hide_index=True, width="stretch")
+        st.dataframe(
+            brut.head(20), hide_index=True, width="stretch",
+            height=hauteur_apercu(parametres),
+        )
 
         suggestions = detecter_colonnes(brut)
         colonnes = list(brut.columns)
@@ -208,9 +220,10 @@ def afficher(_parametres: dict) -> None:
                 erreurs = preparees.attrs.get("erreurs_lecture", [])
                 st.session_state["transactions_import_preparees"] = detecter_doublons_import(preparees)
                 if erreurs:
+                    detail_erreurs = " ; ".join(erreurs[:3])
                     st.warning(
                         f"{len(erreurs)} ligne(s) non exploitable(s) ont été écartées. "
-                        + " ; ".join(erreurs[:3])
+                        f"{detail_erreurs}"
                     )
             except Exception as erreur:
                 st.error(str(erreur))
@@ -230,26 +243,45 @@ def afficher(_parametres: dict) -> None:
     categories_depense = noms_categories("Dépense", True)
     mois = _mois_relecture(preparees)
     affichage = _vers_affichage(preparees)
+    hauteur_grille = hauteur_tableau(parametres, grille=True)
     if AGGRID_DISPONIBLE:
-        editee = _editeur_aggrid(affichage, categories, categories_depense, mois)
+        editee = _editeur_aggrid(
+            affichage, categories, categories_depense, mois, hauteur_grille
+        )
     else:
         st.caption("Éditeur Streamlit actif ; l’éditeur avancé sera disponible après installation des dépendances.")
-        editee = _editeur_natif(affichage, categories, categories_depense, mois)
+        editee = _editeur_natif(
+            affichage, categories, categories_depense, mois, hauteur_grille
+        )
     interne = _vers_interne(editee)
-    nombre_selectionne = int(interne["importer"].fillna(False).astype(bool).sum())
+    nombre_selectionne = sum(
+        est_ligne_selectionnee(valeur) for valeur in interne["importer"]
+    )
     st.write(f"{nombre_selectionne} ligne(s) sélectionnée(s) pour l’import.")
     col_valider, col_annuler = st.columns(2)
     if col_valider.button("Valider l’import", type="primary", width="stretch"):
         try:
             nombre = valider_import(interne)
             st.session_state.pop("transactions_import_preparees", None)
-            st.session_state["message_import_bancaire"] = (
-                f"Import terminé : {nombre} transaction(s) ajoutée(s). Une sauvegarde a été créée."
-            )
+            if nombre:
+                st.session_state["message_import_bancaire"] = (
+                    f"Import terminé : {nombre} transaction(s) ajoutée(s). Une sauvegarde a été créée."
+                )
+            else:
+                st.session_state["message_import_bancaire"] = (
+                    "Aucune transaction n’a été importée : aucune ligne sélectionnée et validable."
+                )
             st.rerun()
+        except ErreurValidationImport as erreur:
+            st.error(
+                f"Validation interrompue à l’étape « {erreur.etape} » : "
+                f"{erreur.message_detail}"
+            )
         except Exception as erreur:
-            st.error(str(erreur))
+            st.error(
+                "Validation interrompue à une étape inattendue : "
+                f"{type(erreur).__name__} — {erreur}"
+            )
     if col_annuler.button("Annuler la préparation", width="stretch"):
         st.session_state.pop("transactions_import_preparees", None)
         st.rerun()
-

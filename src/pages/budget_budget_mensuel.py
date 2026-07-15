@@ -9,14 +9,48 @@ from src.services.budget_service import (
     enregistrer_budgets,
     mois_budget_disponibles,
     rapport_budget,
+    supprimer_mois_budget,
 )
-from src.ui_styles import couleurs_actives
+from src.ui_styles import couleurs_actives, hauteur_tableau
 from src.utils import MOIS_FR, libelle_mois
+
+
+@st.dialog("Supprimer un mois de budget")
+def _dialog_suppression_mois(mois_existants: list[str], mois_courant: str) -> None:
+    mois = st.selectbox(
+        "Mois à supprimer",
+        mois_existants,
+        index=mois_existants.index(mois_courant),
+        format_func=libelle_mois,
+    )
+    st.warning(
+        "Seules les lignes de budget de ce mois seront supprimées. "
+        "Les transactions seront conservées."
+    )
+    confirmer = st.checkbox(
+        f"Je confirme la suppression du budget {libelle_mois(mois)}"
+    )
+    if st.button(
+        "Supprimer ce mois budget", type="primary", disabled=not confirmer,
+        use_container_width=True,
+    ):
+        try:
+            nombre = supprimer_mois_budget(mois)
+            st.session_state["message_budget"] = (
+                f"Budget {libelle_mois(mois)} supprimé ({nombre} ligne(s)). "
+                "Les transactions sont intactes."
+            )
+            st.rerun()
+        except Exception as erreur:
+            st.error(f"Suppression du budget impossible : {erreur}")
 
 
 def afficher(parametres: dict) -> None:
     couleurs = couleurs_actives(parametres)
+    table_height = hauteur_tableau(parametres)
     st.title("Budget mensuel")
+    if message := st.session_state.pop("message_budget", None):
+        st.success(message)
     mois_existants = mois_budget_disponibles()
     if not mois_existants:
         st.subheader("Créer votre premier budget")
@@ -35,7 +69,7 @@ def afficher(parametres: dict) -> None:
             st.rerun()
         return
 
-    col_mois, col_action = st.columns([2, 1])
+    col_mois, col_action, col_suppression = st.columns([2, 1, 1])
     mois = col_mois.selectbox(
         "Mois", mois_existants, index=len(mois_existants) - 1, format_func=libelle_mois
     )
@@ -43,6 +77,8 @@ def afficher(parametres: dict) -> None:
         suivant = creer_mois_suivant()
         st.success(f"Le budget {libelle_mois(suivant)} a été créé à partir du mois précédent.")
         st.rerun()
+    if col_suppression.button("Supprimer un mois budget", width="stretch"):
+        _dialog_suppression_mois(mois_existants, mois)
     st.caption(f"Budget affiché : {libelle_mois(mois)}")
 
     rapport = rapport_budget(
@@ -82,6 +118,7 @@ def afficher(parametres: dict) -> None:
             style,
             hide_index=True,
             width="stretch",
+            height=table_height,
             column_config={
                 "Budget prévu": st.column_config.NumberColumn(format="%.2f €"),
                 "Réel": st.column_config.NumberColumn(format="%.2f €"),
@@ -98,6 +135,7 @@ def afficher(parametres: dict) -> None:
             edition_affichee,
             hide_index=True,
             width="stretch",
+            height=table_height,
             disabled=["Identifiant", "Mois", "Type", "Catégorie", "Réel", "Écart", "% utilisé", "Statut"],
             column_config={
                 "Identifiant": None,

@@ -10,6 +10,7 @@ from src.config import (
     PARAMETRES_DEFAUT,
     REGLES_AFFECTATION_DEFAUT,
     SCHEMA_PATH,
+    THEMES_AUTORISES,
 )
 
 
@@ -42,6 +43,14 @@ def initialiser_base() -> None:
     """Crée le schéma et les données de référence au premier lancement."""
     with connexion_db() as connexion:
         connexion.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+        colonnes_transactions = {
+            ligne["name"]
+            for ligne in connexion.execute("PRAGMA table_info(transactions)").fetchall()
+        }
+        if "libelle_bancaire_brut" not in colonnes_transactions:
+            connexion.execute(
+                "ALTER TABLE transactions ADD COLUMN libelle_bancaire_brut TEXT"
+            )
         nombre = connexion.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
         if nombre == 0:
             horodatage = maintenant()
@@ -57,6 +66,25 @@ def initialiser_base() -> None:
             connexion.execute(
                 "INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)",
                 (cle, valeur),
+            )
+        theme_actuel = connexion.execute(
+            "SELECT value FROM settings WHERE key = 'theme_actif'"
+        ).fetchone()
+        if not theme_actuel or theme_actuel["value"] not in THEMES_AUTORISES:
+            connexion.execute(
+                """INSERT INTO settings(key, value) VALUES ('theme_actif', 'Sombre bleu')
+                   ON CONFLICT(key) DO UPDATE SET value = excluded.value"""
+            )
+        affichage_actuel = connexion.execute(
+            "SELECT value FROM settings WHERE key = 'configuration_affichage'"
+        ).fetchone()
+        if not affichage_actuel or affichage_actuel["value"] not in {
+            "ecran_15", "ecran_27"
+        }:
+            connexion.execute(
+                """INSERT INTO settings(key, value)
+                   VALUES ('configuration_affichage', 'ecran_15')
+                   ON CONFLICT(key) DO UPDATE SET value = excluded.value"""
             )
         nombre_regles = connexion.execute(
             "SELECT COUNT(*) FROM regles_affectation"

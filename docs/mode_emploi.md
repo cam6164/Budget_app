@@ -2,7 +2,7 @@
 
 ## Choisir l’apparence
 
-Ouvrez **Paramètres > Apparence**, choisissez l’un des onze thèmes pastel ou sombres, puis enregistrez. Le choix est conservé dans SQLite et s’applique à toutes les pages, y compris les graphiques.
+Ouvrez **Paramètres > Apparence**, choisissez l’un des six thèmes sombres et la configuration **Écran 15 pouces** ou **Écran 27 pouces**, puis enregistrez. Les choix sont conservés dans SQLite et s’appliquent à toutes les pages. Le mode 15 pouces réduit les espacements et utilise des tableaux à défilement interne ; le mode 27 pouces augmente leur hauteur.
 
 ## Lire le Tableau de bord
 
@@ -29,9 +29,11 @@ Ouvrez **Budget mensuel**, choisissez l’année et le mois dans la vue annuelle
 
 En V2, le tableau est protégé en lecture par défaut. Cliquez sur **Modifier les budgets** pour activer l’édition ; les statuts OK, Vigilance et Dépassement restent visibles et utilisent les seuils définis dans Paramètres.
 
+Le bouton **Supprimer un mois** ouvre une confirmation. Une sauvegarde est créée avant de supprimer uniquement les prévisions du mois ; les transactions restent intactes.
+
 ## Ajouter une transaction
 
-Ouvrez **Transactions** puis **Ajouter une transaction**. Choisissez le type avant de remplir le formulaire : la liste de catégories se met à jour depuis la base locale. Saisissez toujours un montant positif ; l’application applique elle-même le bon signe bancaire et budgétaire.
+Ouvrez **Transactions** puis **Ajouter une transaction**. Le formulaire s’ouvre dans une fenêtre compacte. Choisissez le type avant de le remplir : la liste de catégories se met à jour depuis la base locale. Saisissez toujours un montant positif ; l’application applique elle-même le bon signe bancaire et budgétaire.
 
 Pour un remboursement, indiquez le sens et la catégorie de dépense concernée. Pour un salaire daté à partir du 18, le mode **Automatique** propose le mois suivant.
 
@@ -39,7 +41,7 @@ Pour un remboursement, indiquez le sens et la catégorie de dépense concernée.
 
 1. Ouvrez **Import bancaire** et sélectionnez un fichier `.csv` ou `.xlsx`.
 2. Contrôlez l’aperçu et associez les colonnes **Date réelle**, **Libellé** et **Montant**. Si la banque sépare les flux, choisissez **Deux colonnes Débit et Crédit**.
-3. Cliquez sur **Préparer les transactions**. L’application normalise dates et montants, applique les règles et recherche les doublons.
+3. Cliquez sur **Préparer les transactions**. L’application normalise dates et montants, nettoie le libellé affiché, conserve le libellé bancaire brut, applique les règles et recherche les doublons.
 4. Dans la table de relecture, modifiez librement les types, catégories, mois, montants et commentaires. Cochez uniquement les lignes souhaitées.
 5. Cliquez sur **Valider l’import**. Une sauvegarde automatique précède l’insertion et le nombre de transactions ajoutées est affiché.
 
@@ -58,6 +60,8 @@ Une ligne est signalée si une transaction existante possède la même date, le 
 ## Modifier rapidement des transactions
 
 Dans **Transactions**, appliquez éventuellement des filtres puis cliquez sur **Activer la modification**. Modifiez les cellules souhaitées et cliquez sur **Enregistrer les modifications**. Seules les lignes filtrées sont présentées et une sauvegarde automatique est créée avant l’écriture.
+
+Pour supprimer plusieurs transactions, cochez **Supprimer** sur les lignes concernées, activez la confirmation puis cliquez sur **Supprimer les transactions sélectionnées**. Une sauvegarde automatique précède la suppression.
 
 ## Modifier le mois budget
 

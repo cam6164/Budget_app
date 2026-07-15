@@ -13,8 +13,16 @@ def afficher_navigation() -> str:
         st.session_state["page_active"] = cible
     with st.sidebar:
         st.title("Budget personnel")
-        st.caption("Suivi budget et finances")
-        page = st.radio("Navigation", PAGES, key="page_active", label_visibility="collapsed")
-        st.divider()
-        st.caption("Données conservées uniquement sur cet ordinateur")
-    return page
+        page_active = st.session_state.get("page_active", "Accueil")
+        if page_active not in PAGES:
+            page_active = "Accueil"
+        for page in PAGES:
+            if st.button(
+                page,
+                key=f"navigation_{page}",
+                type="primary" if page == page_active else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state["page_active"] = page
+                st.rerun()
+    return page_active

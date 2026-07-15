@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     categorie TEXT,
     categorie_remboursee TEXT,
     libelle TEXT NOT NULL,
+    libelle_bancaire_brut TEXT,
     montant_bancaire REAL NOT NULL,
     montant_budget REAL NOT NULL,
     moyen_paiement TEXT,

@@ -6,14 +6,14 @@ Application web locale de suivi de budget personnel, conçue pour remplacer un s
 
 - tableau de bord avec KPI, graphiques, alertes et comparaison au mois précédent ;
 - résumé mensuel automatique, trajectoire du budget et comparaison détaillée M-1 ;
-- saisie, filtrage et suppression confirmée des transactions ;
+- saisie en fenêtre compacte, filtrage et suppression multiple confirmée des transactions ;
 - modification rapide et sauvegardée des transactions existantes ;
 - import bancaire manuel CSV/XLSX avec association des colonnes et relecture ;
 - règles d’affectation automatiques, détection des doublons et validation sélective ;
-- budget mensuel éditable et duplication du mois précédent ;
+- budget mensuel éditable, duplication et suppression sécurisée d’un mois ;
 - suivi chronologique de l’épargne ;
 - catégories dynamiques activables et désactivables ;
-- thèmes clairs et sombres ;
+- six thèmes sombres et deux configurations d’affichage (15 ou 27 pouces) ;
 - sauvegarde/restauration SQLite et export CSV.
 
 La connexion bancaire automatique, OFX/QIF/CMI et la section « Courses et recettes » ne font pas partie de cette version.
@@ -22,13 +22,13 @@ La connexion bancaire automatique, OFX/QIF/CMI et la section « Courses et recet
 
 La page **Import bancaire** accepte les CSV séparés par point-virgule, virgule ou tabulation, ainsi que les fichiers Excel `.xlsx`. Après l’aperçu, associez Date réelle, Libellé et Montant — ou Débit/Crédit — puis relisez chaque proposition avant validation. Les doublons probables sont visibles mais décochés. Une sauvegarde SQLite est créée automatiquement avant toute insertion.
 
-Les mots-clés et priorités se gèrent dans **Paramètres > Règles d’affectation bancaire**. La règle WERO demande toujours une relecture : complétez son sens et la catégorie remboursée avant de l’importer.
+Les libellés bancaires techniques sont automatiquement raccourcis pour la lecture, tandis que le libellé brut est conservé en base et visible pendant la relecture. Les mots-clés et priorités se gèrent dans **Paramètres > Règles d’affectation bancaire**. La règle WERO demande toujours une relecture : complétez son sens et la catégorie remboursée avant de l’importer.
 
 ## Tableau de bord et thèmes
 
 Le Tableau de bord présente six KPI, quatre graphiques interchangeables, les alertes budget, le comparatif M-1 et un résumé automatique fondé uniquement sur les données locales. Le graphique final compare séparément budget et dépenses par catégorie ; les dépassements y sont mis en évidence.
 
-Onze thèmes sont disponibles dans **Paramètres > Apparence** : cinq palettes pastel et six palettes sombres. Chaque thème adapte fonds, cartes, boutons, textes, statuts et graphiques avec un contraste approprié.
+Six thèmes sombres sont disponibles dans **Paramètres > Apparence**. Le thème par défaut est **Sombre bleu**. Le même écran permet de choisir **Écran 15 pouces** pour une vue très compacte ou **Écran 27 pouces** pour agrandir graphiques et tableaux.
 
 ## Installation et lancement sous Windows
 

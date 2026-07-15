@@ -29,30 +29,10 @@ def _theme(
 
 
 THEMES = {
-    "Vert pastel": _theme(
-        "#f3f8f4", "#ffffff", "#eaf4ed", "#397356", "#7da88d",
-        "#397356", "#285c42", "#183228", "#617269", "#ffffff",
-        "#c9ddd0", "#2f8a5b", "#c84f56", "#d28a2f", "#397356", "#77a98b", "#d7a34b",
-    ),
-    "Orange pastel": _theme(
-        "#fff7ef", "#ffffff", "#fceddf", "#b9632f", "#d99a69",
-        "#b9632f", "#93471f", "#452819", "#806353", "#ffffff",
-        "#efd0b6", "#3f8b61", "#c54e50", "#d18428", "#b9632f", "#e39b61", "#647fa5",
-    ),
-    "Bleu pastel": _theme(
-        "#f2f7fb", "#ffffff", "#e5f0f7", "#3c7398", "#7aa7c3",
-        "#3c7398", "#285c7e", "#173448", "#607482", "#ffffff",
-        "#c5dceb", "#39845c", "#c44f5b", "#cf8a2d", "#3c7398", "#76a7c7", "#8b76b5",
-    ),
-    "Gris pastel": _theme(
-        "#f5f6f7", "#ffffff", "#e9ecef", "#606d77", "#98a2aa",
-        "#606d77", "#45515b", "#272f35", "#6d767d", "#ffffff",
-        "#d2d7db", "#38815a", "#bd4d55", "#c8842d", "#606d77", "#929da5", "#8a74aa",
-    ),
-    "Violet pastel": _theme(
-        "#faf5fc", "#ffffff", "#f0e6f4", "#7c5892", "#ae8ebf",
-        "#7c5892", "#623f78", "#3a2546", "#74627d", "#ffffff",
-        "#ddcbe6", "#38815a", "#c14f64", "#cb872d", "#7c5892", "#b58bc5", "#4e86a3",
+    "Sombre bleu": _theme(
+        "#0c1620", "#152431", "#203545", "#72b2df", "#477fa5",
+        "#5b9bc7", "#80bee8", "#eef8ff", "#a9bdca", "#0d1922",
+        "#31546c", "#6bd19a", "#ff7e8b", "#f2b75c", "#72b2df", "#8a8fd0", "#e1a857",
     ),
     "Sombre vert": _theme(
         "#0d1712", "#16241c", "#203329", "#79c398", "#4d8a68",
@@ -63,11 +43,6 @@ THEMES = {
         "#1c130d", "#2a1e16", "#3b2a1e", "#e39b68", "#a96943",
         "#cf8453", "#eba976", "#fff5ed", "#c8b0a0", "#21140c",
         "#5c402d", "#70d39a", "#ff7e83", "#f5ba5d", "#e39b68", "#7fa9d1", "#b18bd0",
-    ),
-    "Sombre bleu": _theme(
-        "#0c1620", "#152431", "#203545", "#72b2df", "#477fa5",
-        "#5b9bc7", "#80bee8", "#eef8ff", "#a9bdca", "#0d1922",
-        "#31546c", "#6bd19a", "#ff7e8b", "#f2b75c", "#72b2df", "#8a8fd0", "#e1a857",
     ),
     "Sombre gris": _theme(
         "#141618", "#202326", "#2d3135", "#b2bbc2", "#737d85",
@@ -88,12 +63,12 @@ THEMES = {
 
 
 def obtenir_theme(nom: str | None) -> dict[str, str]:
-    return THEMES.get(nom or "", THEMES["Vert pastel"])
+    return THEMES.get(nom or "", THEMES["Sombre bleu"])
 
 
 def appliquer_theme(nom: str) -> None:
     c = obtenir_theme(nom)
-    sombre = nom.startswith("Sombre")
+    sombre = True
     st.markdown(
         f"""
         <style>
@@ -118,6 +93,10 @@ def appliquer_theme(nom: str) -> None:
         }}
         [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
             color: var(--app-texte-secondaire);
+        }}
+        [data-testid="stSidebar"] .stButton > button {{
+            width: 100%; justify-content: flex-start; border-radius: 7px;
+            min-height: 2.45rem; margin: .08rem 0; font-size: 1.06rem;
         }}
         h1 {{ font-size: 2rem !important; letter-spacing: -.025em; margin-bottom: .75rem !important; }}
         h2 {{ font-size: 1.42rem !important; margin-top: 1.7rem !important; }}

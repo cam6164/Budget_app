@@ -13,6 +13,7 @@ from src.pages import (
     budget_transactions,
 )
 from src.themes import appliquer_theme
+from src.ui_styles import appliquer_configuration_affichage
 
 
 st.set_page_config(
@@ -31,7 +32,8 @@ def main() -> None:
         st.error(f"Impossible d’initialiser la base locale : {erreur}")
         st.stop()
 
-    appliquer_theme(parametres.get("theme_actif", "Vert pastel"))
+    appliquer_theme(parametres.get("theme_actif", "Sombre bleu"))
+    appliquer_configuration_affichage(parametres)
     page = afficher_navigation()
     routes = {
         "Accueil": accueil.afficher,

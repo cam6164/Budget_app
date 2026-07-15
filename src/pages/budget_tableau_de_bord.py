@@ -16,11 +16,20 @@ from src.services.tableau_de_bord_service import (
     resume_automatique,
 )
 from src.services.transactions_service import mois_disponibles
-from src.ui_styles import bloc_resume, carte_kpi, couleurs_actives, styliser_graphique
+from src.ui_styles import (
+    bloc_resume,
+    carte_kpi,
+    couleurs_actives,
+    hauteur_graphique,
+    hauteur_tableau,
+    styliser_graphique,
+)
 from src.utils import euros, libelle_mois, mois_canonique
 
 
-def _graphique_suivi(mois: str, couleurs: dict[str, str]) -> go.Figure:
+def _graphique_suivi(
+    mois: str, couleurs: dict[str, str], hauteur: int
+) -> go.Figure:
     donnees = pd.DataFrame(depenses_cumulees(mois))
     figure = go.Figure()
     figure.add_trace(
@@ -50,12 +59,12 @@ def _graphique_suivi(mois: str, couleurs: dict[str, str]) -> go.Figure:
     figure.update_xaxes(dtick=1, title="Jour du mois")
     figure.update_yaxes(title="Montant cumulé")
     return styliser_graphique(
-        figure, couleurs, "Évolution des dépenses cumulées", ",.0f €"
+        figure, couleurs, "Évolution des dépenses cumulées", ",.0f €", hauteur
     )
 
 
 def _graphique_historique(
-    choix: str, historique: pd.DataFrame, couleurs: dict[str, str]
+    choix: str, historique: pd.DataFrame, couleurs: dict[str, str], hauteur: int
 ) -> go.Figure:
     figure = go.Figure()
     if historique.empty:
@@ -63,7 +72,7 @@ def _graphique_historique(
             text="Aucune donnée mensuelle disponible", x=.5, y=.5,
             xref="paper", yref="paper", showarrow=False,
         )
-        return styliser_graphique(figure, couleurs)
+        return styliser_graphique(figure, couleurs, hauteur=hauteur)
     if choix == "Dépenses par mois":
         figure.add_trace(
             go.Bar(
@@ -100,10 +109,10 @@ def _graphique_historique(
             )
         )
         titre, format_y = "Taux d’épargne par mois", ".0f %"
-    return styliser_graphique(figure, couleurs, titre, format_y)
+    return styliser_graphique(figure, couleurs, titre, format_y, hauteur)
 
 
-def _afficher_comparatif(mois: str) -> None:
+def _afficher_comparatif(mois: str, table_height: int) -> None:
     comparatif = comparaison_mois_precedent(mois)
     st.subheader("Comparatif M-1")
     if not comparatif["disponible"]:
@@ -136,7 +145,9 @@ def _afficher_comparatif(mois: str) -> None:
                 "Évolution": "—" if evolution is None else f"{evolution:+.1%}",
             }
         )
-    st.dataframe(pd.DataFrame(lignes), hide_index=True, width="stretch")
+    st.dataframe(
+        pd.DataFrame(lignes), hide_index=True, width="stretch", height=table_height
+    )
     for phrase in phrases_comparatif(comparatif):
         st.caption(phrase)
 
@@ -154,7 +165,9 @@ def _afficher_alertes(
             st.error(alerte["message"])
 
 
-def _graphique_categories(mois: str, couleurs: dict[str, str]) -> go.Figure | None:
+def _graphique_categories(
+    mois: str, couleurs: dict[str, str], hauteur: int
+) -> go.Figure | None:
     comparaison = comparaison_categories(mois)
     if not comparaison:
         return None
@@ -183,12 +196,14 @@ def _graphique_categories(mois: str, couleurs: dict[str, str]) -> go.Figure | No
     figure.update_layout(barmode="group")
     return styliser_graphique(
         figure, couleurs,
-        "Budget prévu vs dépenses réelles par catégorie", ",.0f €",
+        "Budget prévu vs dépenses réelles par catégorie", ",.0f €", hauteur,
     )
 
 
 def afficher(parametres: dict) -> None:
     couleurs = couleurs_actives(parametres)
+    hauteur_principale = hauteur_graphique(parametres)
+    hauteur_secondaire = hauteur_graphique(parametres, secondaire=True)
     st.title("Tableau de bord")
     mois = sorted(set(mois_budget_disponibles()) | set(mois_disponibles()))
     if not mois:
@@ -227,25 +242,27 @@ def afficher(parametres: dict) -> None:
         historique["libelle_mois"] = historique["mois"].map(libelle_mois)
     with st.container(border=True):
         figure = (
-            _graphique_suivi(selection, couleurs)
+            _graphique_suivi(selection, couleurs, hauteur_principale)
             if choix == "Suivi du mois"
-            else _graphique_historique(choix, historique, couleurs)
+            else _graphique_historique(choix, historique, couleurs, hauteur_principale)
         )
         st.plotly_chart(figure, width="stretch", key=f"graphique_principal_{choix}")
 
     seuil_vigilance = float(parametres.get("seuil_vigilance_budget", 0.8))
     seuil_alerte = float(parametres.get("seuil_alerte_budget", 1.0))
-    col_comparatif, col_alertes = st.columns(2, gap="large")
+    col_comparatif, col_alertes, col_resume = st.columns(3, gap="medium")
     with col_comparatif:
-        _afficher_comparatif(selection)
+        _afficher_comparatif(selection, min(hauteur_tableau(parametres), 235))
     with col_alertes:
         _afficher_alertes(selection, seuil_vigilance, seuil_alerte)
-
-    st.subheader("Résumé du mois")
-    bloc_resume(resume_automatique(selection, seuil_vigilance, seuil_alerte))
+    with col_resume:
+        st.subheader("Résumé du mois")
+        bloc_resume(resume_automatique(selection, seuil_vigilance, seuil_alerte))
 
     st.subheader("Détail par catégorie")
-    graphique_categories = _graphique_categories(selection, couleurs)
+    graphique_categories = _graphique_categories(
+        selection, couleurs, hauteur_secondaire
+    )
     if graphique_categories is None:
         st.info("Créez le budget du mois ou ajoutez des dépenses pour afficher cette comparaison.")
     else:

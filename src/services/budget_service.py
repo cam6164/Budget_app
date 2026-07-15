@@ -56,6 +56,23 @@ def creer_mois_suivant() -> str:
     return suivant
 
 
+def supprimer_mois_budget(mois: str) -> int:
+    """Supprime uniquement les lignes de budget du mois, jamais les transactions."""
+    from src.services.backup_service import creer_sauvegarde
+
+    mois = mois_canonique(mois)
+    with connexion_db() as connexion:
+        nombre = connexion.execute(
+            "SELECT COUNT(*) FROM budgets WHERE mois = ?", (mois,)
+        ).fetchone()[0]
+    if nombre == 0:
+        return 0
+    creer_sauvegarde(f"Sauvegarde automatique avant suppression du budget {mois}")
+    with connexion_db() as connexion:
+        curseur = connexion.execute("DELETE FROM budgets WHERE mois = ?", (mois,))
+    return int(curseur.rowcount)
+
+
 def enregistrer_budgets(valeurs: list[dict]) -> None:
     horodatage = maintenant()
     with connexion_db() as connexion:
@@ -120,4 +137,3 @@ def rapport_budget(
             }
         )
     return resultat
-

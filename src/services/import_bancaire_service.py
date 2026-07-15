@@ -10,16 +10,81 @@ import pandas as pd
 from src.config import MOYENS_PAIEMENT, STATUTS_IMPORT, TYPES_TRANSACTION
 from src.database import connexion_db, maintenant
 from src.services.backup_service import creer_sauvegarde
-from src.services.regles_affectation_service import appliquer_regle, normaliser_texte
+from src.services.regles_affectation_service import appliquer_regle, lister_regles, normaliser_texte
 from src.utils import mois_budget_automatique, mois_canonique
 
 
 COLONNES_IMPORT = [
     "importer", "date_reelle", "mois_reel", "mois_budget", "type",
     "sens_remboursement", "categorie", "categorie_remboursee", "libelle",
+    "libelle_bancaire_brut",
     "montant_bancaire", "montant_budget", "moyen_paiement", "commentaire",
     "statut_import",
 ]
+
+
+class ErreurValidationImport(ValueError):
+    """Erreur métier enrichie avec l'étape précise de validation."""
+
+    def __init__(self, etape: str, message: str):
+        self.etape = etape
+        self.message_detail = message
+        super().__init__(f"{etape} : {message}")
+
+
+def _texte_cellule(valeur: object, defaut: str = "") -> str:
+    if valeur is None:
+        return defaut
+    try:
+        if bool(pd.isna(valeur)):
+            return defaut
+    except (TypeError, ValueError):
+        pass
+    texte = str(valeur).strip()
+    return defaut if not texte or texte.lower() in {"nan", "none", "nat"} else texte
+
+
+def nettoyer_libelle_bancaire(libelle: object) -> str:
+    """Produit un libellé court tout en laissant le texte bancaire brut disponible."""
+    brut = normaliser_texte(libelle)
+    if not brut:
+        return ""
+    enseignes = (
+        (r"\bLE\s+CARRE\b", "LE CARRE"),
+        (r"\bCARREFOUR\b", "CARREFOUR"),
+        (r"\bCOCCI\b", "COCCI"),
+        (r"\bSNCF\b", "SNCF"),
+        (r"\bDECATHLON\b", "DECATHLON"),
+        (r"\bENGIE\b", "ENGIE"),
+        (r"\bWERO\b", "WERO"),
+        (r"\bMC\s*DONALD(?:S)?\b", "MC DONALDS"),
+    )
+    for motif, nom in enseignes:
+        if re.search(motif, brut):
+            return nom
+    for regle in lister_regles(actives_uniquement=True):
+        mot_cle = normaliser_texte(regle.get("mot_cle"))
+        if mot_cle and mot_cle in brut:
+            return mot_cle
+
+    nettoye = brut
+    nettoye = re.sub(r"\bUIR[0-9A-Z]+\b", " ", nettoye)
+    nettoye = re.sub(r"\b[A-Z0-9]{10,}\b", " ", nettoye)
+    nettoye = re.sub(
+        r"\b(?:PAIEMENT|PAIEMENT CB|CARTE|CB|PSC|VIREMENT|PRLV|PRELEVEMENT)\b",
+        " ", nettoye,
+    )
+    nettoye = re.sub(r"\b\d{2}[/-]\d{2}(?:[/-]\d{2,4})?\b", " ", nettoye)
+    nettoye = re.sub(r"\b\d{4,}\b", " ", nettoye)
+    nettoye = re.sub(
+        r"\b(?:BORDEAUX|PARIS|LYON|MARSEILLE|TOULOUSE|NANTES|LILLE|"
+        r"IVRY\s+SUR\s+SEINE?)\b(?:\s+\d{1,2})?",
+        " ", nettoye,
+    )
+    nettoye = re.sub(r"\bSC\b", " ", nettoye)
+    nettoye = re.sub(r"[^A-Z0-9]+", " ", nettoye)
+    nettoye = re.sub(r"\s+", " ", nettoye).strip(" -")
+    return nettoye or brut
 
 
 def _contenu_fichier(uploaded_file) -> bytes:
@@ -213,12 +278,13 @@ def preparer_transactions_import(
 
     lignes: list[dict] = []
     erreurs: list[str] = []
-    for index, source in dataframe.iterrows():
+    for numero_ligne, (_, source) in enumerate(dataframe.iterrows(), start=2):
         try:
             date_reelle = normaliser_date(source[date_colonne])
-            libelle = str(source[libelle_colonne]).strip()
-            if not libelle or libelle.lower() == "nan":
+            libelle_bancaire_brut = str(source[libelle_colonne]).strip()
+            if not libelle_bancaire_brut or libelle_bancaire_brut.lower() == "nan":
                 raise ValueError("libellé vide")
+            libelle = nettoyer_libelle_bancaire(libelle_bancaire_brut)
             if montant_colonne:
                 montant_bancaire = normaliser_montant(source[montant_colonne])
             else:
@@ -227,7 +293,9 @@ def preparer_transactions_import(
                 montant_bancaire = credit - debit
             if montant_bancaire == 0:
                 raise ValueError("montant nul")
-            affectation = appliquer_regle(libelle, montant_bancaire)
+            affectation = appliquer_regle(
+                f"{libelle} {libelle_bancaire_brut}", montant_bancaire
+            )
             mois_reel = calculer_mois_reel(date_reelle)
             mois_budget = calculer_mois_budget(
                 date_reelle, affectation["type"], affectation["categorie"], libelle
@@ -247,6 +315,7 @@ def preparer_transactions_import(
                     "categorie": affectation["categorie"],
                     "categorie_remboursee": affectation["categorie_remboursee"],
                     "libelle": libelle,
+                    "libelle_bancaire_brut": libelle_bancaire_brut,
                     "montant_bancaire": montant_bancaire,
                     "montant_budget": montant_budget,
                     "moyen_paiement": "Virement",
@@ -255,7 +324,7 @@ def preparer_transactions_import(
                 }
             )
         except Exception as erreur:
-            erreurs.append(f"ligne {index + 2} : {erreur}")
+            erreurs.append(f"ligne {numero_ligne} : {erreur}")
     if not lignes:
         detail = "; ".join(erreurs[:5])
         raise ValueError(f"Aucune ligne bancaire valide. {detail}")
@@ -291,7 +360,7 @@ def detecter_doublons_import(dataframe: pd.DataFrame) -> pd.DataFrame:
     return resultat
 
 
-def _bool_importer(valeur: object) -> bool:
+def est_ligne_selectionnee(valeur: object) -> bool:
     if isinstance(valeur, bool):
         return valeur
     return normaliser_texte(valeur) in {"TRUE", "VRAI", "1", "OUI", "YES"}
@@ -299,30 +368,35 @@ def _bool_importer(valeur: object) -> bool:
 
 def valider_import(dataframe: pd.DataFrame) -> int:
     """Valide, sauvegarde puis insère uniquement les lignes cochées et non ignorées."""
+    if not isinstance(dataframe, pd.DataFrame):
+        raise ErreurValidationImport(
+            "lecture de la sélection", "la table de relecture n’est pas exploitable"
+        )
     transactions: list[dict] = []
     erreurs: list[str] = []
-    for index, ligne in dataframe.iterrows():
-        if not _bool_importer(ligne.get("importer", False)):
+    for numero_ligne, (_, ligne) in enumerate(dataframe.iterrows(), start=1):
+        if not est_ligne_selectionnee(ligne.get("importer", False)):
             continue
-        statut = str(ligne.get("statut_import", "À vérifier") or "À vérifier")
+        statut = _texte_cellule(ligne.get("statut_import"), "À vérifier")
         if statut == "Ignorée":
             continue
         try:
             date_reelle = normaliser_date(ligne["date_reelle"])
-            type_transaction = str(ligne["type"]).strip()
+            type_transaction = _texte_cellule(ligne.get("type"))
             if type_transaction not in TYPES_TRANSACTION:
                 raise ValueError("type non reconnu")
-            libelle = str(ligne["libelle"]).strip()
-            if not libelle or libelle.lower() == "nan":
+            libelle = _texte_cellule(ligne.get("libelle"))
+            if not libelle:
                 raise ValueError("libellé obligatoire")
+            libelle_bancaire_brut = _texte_cellule(
+                ligne.get("libelle_bancaire_brut"), libelle
+            )
             bancaire = normaliser_montant(ligne["montant_bancaire"])
             if bancaire == 0:
                 raise ValueError("montant bancaire nul")
-            categorie = str(ligne.get("categorie", "") or "").strip()
-            sens = str(ligne.get("sens_remboursement", "") or "").strip()
-            categorie_remboursee = str(
-                ligne.get("categorie_remboursee", "") or ""
-            ).strip()
+            categorie = _texte_cellule(ligne.get("categorie"))
+            sens = _texte_cellule(ligne.get("sens_remboursement"))
+            categorie_remboursee = _texte_cellule(ligne.get("categorie_remboursee"))
             if type_transaction == "Remboursement" and (
                 sens not in ("On me rembourse", "Je rembourse quelqu’un")
                 or not categorie_remboursee
@@ -330,7 +404,7 @@ def valider_import(dataframe: pd.DataFrame) -> int:
                 raise ValueError(
                     "un remboursement exige son sens et sa catégorie remboursée"
                 )
-            mois_reel_saisi = str(ligne.get("mois_reel", "") or "").strip()
+            mois_reel_saisi = _texte_cellule(ligne.get("mois_reel"))
             try:
                 mois_reel = (
                     mois_canonique(mois_reel_saisi)
@@ -339,7 +413,7 @@ def valider_import(dataframe: pd.DataFrame) -> int:
                 )
             except ValueError:
                 mois_reel = calculer_mois_reel(date_reelle)
-            mois_saisi = str(ligne.get("mois_budget", "") or "").strip()
+            mois_saisi = _texte_cellule(ligne.get("mois_budget"))
             mois_budget = (
                 mois_canonique(mois_saisi)
                 if mois_saisi
@@ -349,7 +423,7 @@ def valider_import(dataframe: pd.DataFrame) -> int:
                 type_transaction, categorie, sens, bancaire,
                 ligne.get("montant_budget"),
             )
-            moyen = str(ligne.get("moyen_paiement", "Virement") or "Virement")
+            moyen = _texte_cellule(ligne.get("moyen_paiement"), "Virement")
             if moyen not in MOYENS_PAIEMENT:
                 moyen = "Virement"
             if statut not in STATUTS_IMPORT:
@@ -360,42 +434,58 @@ def valider_import(dataframe: pd.DataFrame) -> int:
                     "mois_budget": mois_budget, "type": type_transaction,
                     "sens": sens or None, "categorie": categorie or None,
                     "categorie_remboursee": categorie_remboursee or None,
-                    "libelle": libelle, "bancaire": bancaire, "budget": budget,
+                    "libelle": libelle,
+                    "libelle_bancaire_brut": libelle_bancaire_brut,
+                    "bancaire": bancaire, "budget": budget,
                     "moyen": moyen,
-                    "commentaire": str(ligne.get("commentaire", "") or ""),
+                    "commentaire": _texte_cellule(ligne.get("commentaire")),
                     "statut": statut,
                 }
             )
         except Exception as erreur:
-            erreurs.append(f"ligne {index + 1} : {erreur}")
+            erreurs.append(f"ligne {numero_ligne} : {erreur}")
     if erreurs:
-        raise ValueError("Import impossible — " + "; ".join(erreurs[:8]))
+        raise ErreurValidationImport(
+            "contrôle des lignes", "; ".join(erreurs[:8])
+        )
     if not transactions:
         return 0
 
-    creer_sauvegarde("Sauvegarde automatique avant import bancaire")
+    try:
+        creer_sauvegarde("Sauvegarde automatique avant import bancaire")
+    except Exception as erreur:
+        raise ErreurValidationImport(
+            "création de la sauvegarde", str(erreur)
+        ) from erreur
     lot_id = uuid4().hex
     horodatage = maintenant()
-    with connexion_db() as connexion:
-        for numero, transaction in enumerate(transactions, start=1):
-            connexion.execute(
-                """INSERT INTO transactions (
-                       date_reelle, mois_reel, mois_budget, type,
-                       sens_remboursement, categorie, categorie_remboursee,
-                       libelle, montant_bancaire, montant_budget,
-                       moyen_paiement, commentaire, source, statut_import,
-                       import_id, created_at, updated_at
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                             'import_bancaire', ?, ?, ?, ?)""",
-                (
-                    transaction["date_reelle"], transaction["mois_reel"],
-                    transaction["mois_budget"], transaction["type"],
-                    transaction["sens"], transaction["categorie"],
-                    transaction["categorie_remboursee"], transaction["libelle"],
-                    transaction["bancaire"], transaction["budget"],
-                    transaction["moyen"], transaction["commentaire"],
-                    transaction["statut"], f"{lot_id}-{numero}",
-                    horodatage, horodatage,
-                ),
-            )
+    try:
+        with connexion_db() as connexion:
+            for numero, transaction in enumerate(transactions, start=1):
+                connexion.execute(
+                    """INSERT INTO transactions (
+                           date_reelle, mois_reel, mois_budget, type,
+                           sens_remboursement, categorie, categorie_remboursee,
+                           libelle, libelle_bancaire_brut,
+                           montant_bancaire, montant_budget,
+                           moyen_paiement, commentaire, source, statut_import,
+                           import_id, created_at, updated_at
+                       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                                 'import_bancaire', ?, ?, ?, ?)""",
+                    (
+                        transaction["date_reelle"], transaction["mois_reel"],
+                        transaction["mois_budget"], transaction["type"],
+                        transaction["sens"], transaction["categorie"],
+                        transaction["categorie_remboursee"], transaction["libelle"],
+                        transaction["libelle_bancaire_brut"],
+                        transaction["bancaire"], transaction["budget"],
+                        transaction["moyen"], transaction["commentaire"],
+                        transaction["statut"], f"{lot_id}-{numero}",
+                        horodatage, horodatage,
+                    ),
+                )
+    except Exception as erreur:
+        raise ErreurValidationImport(
+            "enregistrement en base", str(erreur)
+        ) from erreur
     return len(transactions)

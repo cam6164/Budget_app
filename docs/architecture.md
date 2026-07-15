@@ -26,7 +26,7 @@
 
 ## SQLite
 
-`categories` contient les référentiels actifs ou archivés. `transactions` distingue date réelle, mois réel, mois budget, montant bancaire et montant analytique ; `source`, `statut_import` et `import_id` assurent la traçabilité bancaire. `budgets` contient uniquement les prévisions par mois/type/catégorie. `settings` stocke les préférences sous forme clé/valeur. `backups_log` journalise les sauvegardes. `regles_affectation` stocke mots-clés, affectations, activation et priorité.
+`categories` contient les référentiels actifs ou archivés. `transactions` distingue date réelle, mois réel, mois budget, montant bancaire et montant analytique ; `libelle` contient la version lisible et `libelle_bancaire_brut` préserve le texte source. `source`, `statut_import` et `import_id` assurent la traçabilité bancaire. `budgets` contient uniquement les prévisions par mois/type/catégorie. `settings` stocke notamment le thème et la configuration d’affichage sous forme clé/valeur. `backups_log` journalise les sauvegardes. `regles_affectation` stocke mots-clés, affectations, activation et priorité.
 
 Les mois sont stockés en `AAAA-MM` afin que le tri alphabétique soit aussi chronologique. Les dates utilisent le format ISO. Les indicateurs calculés ne sont pas stockés.
 
@@ -34,10 +34,10 @@ Les mois sont stockés en `AAAA-MM` afin que le tri alphabétique soit aussi chr
 
 Le réel d’une dépense additionne les transactions de dépense et les remboursements rattachés à cette catégorie. L’écart d’une dépense est `prévu - réel`; pour un revenu ou l’épargne, il est `réel - prévu`. Les seuils de vigilance et d’alerte viennent des paramètres. Le solde d’épargne est recalculé dans l’ordre des mois à partir du solde initial.
 
-À l’import, les libellés sont convertis en majuscules sans accents et avec espaces normalisés. La première règle active par priorité puis identifiant est appliquée. Les doublons utilisent la clé date réelle + montant bancaire arrondi + libellé normalisé. La validation prépare toutes les lignes, crée une sauvegarde, puis insère le lot dans une transaction SQLite.
+À l’import, le libellé brut est préservé et une version courte en majuscules est construite en retirant identifiants techniques, numéros de carte, dates et villes courantes. La première règle active par priorité puis identifiant est appliquée. Les doublons utilisent la clé date réelle + montant bancaire arrondi + libellé normalisé. La validation prépare toutes les lignes, crée une sauvegarde, puis insère le lot dans une transaction SQLite.
 
 ## Présentation V2
 
-Chaque thème expose dix-sept couleurs sémantiques : fonds, cartes, blocs, boutons, textes, bordures, états et trois séries graphiques. `app.py` charge le thème enregistré avant le routage ; toutes les pages héritent donc du même CSS. Les graphiques Plotly reçoivent explicitement la palette active afin de préserver les contrastes en mode sombre.
+Les six thèmes sombres exposent dix-sept couleurs sémantiques : fonds, cartes, blocs, boutons, textes, bordures, états et trois séries graphiques. `app.py` charge le thème et la configuration d’affichage enregistrés avant le routage ; toutes les pages héritent donc du même CSS. `ui_styles.py` centralise les hauteurs 15/27 pouces des graphiques et tableaux.
 
 Le résumé automatique ne fait aucun appel réseau : il combine KPI, alertes et évolution M-1 selon des règles déterministes. La courbe réelle du suivi mensuel contient des valeurs nulles après le dernier jour de dépense, ce qui empêche Plotly de la prolonger artificiellement.

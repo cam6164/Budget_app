@@ -16,10 +16,25 @@ MOYENS_PAIEMENT = ["Virement", "CB", "Espèces", "Tickets Resto", "Autre"]
 STATUTS_IMPORT = ["À vérifier", "Validée", "Ignorée", "Doublon probable"]
 
 PARAMETRES_DEFAUT = {
-    "theme_actif": "Vert pastel",
+    "theme_actif": "Sombre bleu",
+    "configuration_affichage": "ecran_15",
     "solde_initial_epargne": "0",
     "seuil_vigilance_budget": "0.8",
     "seuil_alerte_budget": "1.0",
+}
+
+THEMES_AUTORISES = [
+    "Sombre bleu",
+    "Sombre vert",
+    "Sombre orange",
+    "Sombre gris",
+    "Sombre violet",
+    "Sombre doré",
+]
+
+CONFIGURATIONS_AFFICHAGE = {
+    "Écran 15 pouces": "ecran_15",
+    "Écran 27 pouces": "ecran_27",
 }
 
 CATEGORIES_DEFAUT = {

@@ -109,6 +109,32 @@ def supprimer_transaction(transaction_id: int) -> bool:
     return curseur.rowcount > 0
 
 
+def supprimer_transactions(transaction_ids: list[int]) -> int:
+    """Supprime en une fois les transactions sélectionnées après sauvegarde."""
+    from src.services.backup_service import creer_sauvegarde
+
+    identifiants = sorted({int(transaction_id) for transaction_id in transaction_ids})
+    if not identifiants:
+        return 0
+    marqueurs = ", ".join("?" for _ in identifiants)
+    with connexion_db() as connexion:
+        nombre = connexion.execute(
+            f"SELECT COUNT(*) FROM transactions WHERE id IN ({marqueurs})",
+            identifiants,
+        ).fetchone()[0]
+    if nombre == 0:
+        return 0
+    creer_sauvegarde(
+        f"Sauvegarde automatique avant suppression de {nombre} transaction(s)"
+    )
+    with connexion_db() as connexion:
+        curseur = connexion.execute(
+            f"DELETE FROM transactions WHERE id IN ({marqueurs})",
+            identifiants,
+        )
+    return int(curseur.rowcount)
+
+
 def modifier_transactions(transactions: list[dict]) -> int:
     """Valide puis enregistre un lot de modifications après sauvegarde locale."""
     from src.services.backup_service import creer_sauvegarde

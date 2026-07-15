@@ -3,7 +3,10 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src.services.epargne_service import tableau_epargne
-from src.ui_styles import carte_kpi, couleurs_actives, styliser_graphique
+from src.ui_styles import (
+    carte_kpi, couleurs_actives, hauteur_graphique, hauteur_tableau,
+    styliser_graphique,
+)
 from src.utils import euros, libelle_mois
 
 
@@ -52,7 +55,10 @@ def afficher(parametres: dict) -> None:
     )
     graphique.update_yaxes(title="Solde")
     st.plotly_chart(
-        styliser_graphique(graphique, couleurs, format_axe_y=",.0f €"),
+        styliser_graphique(
+            graphique, couleurs, format_axe_y=",.0f €",
+            hauteur=hauteur_graphique(parametres),
+        ),
         width="stretch",
     )
 
@@ -65,7 +71,7 @@ def afficher(parametres: dict) -> None:
         "Taux d’épargne", "Solde début", "Solde fin", "Statut",
     ]
     st.dataframe(
-        dataframe, hide_index=True, width="stretch",
+        dataframe, hide_index=True, width="stretch", height=hauteur_tableau(parametres),
         column_config={
             "Revenus réels": st.column_config.NumberColumn(format="%.2f €"),
             "Épargne prévue": st.column_config.NumberColumn(format="%.2f €"),

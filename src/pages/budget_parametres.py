@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from src.config import SENS_REMBOURSEMENT, TYPES_TRANSACTION
+from src.config import CONFIGURATIONS_AFFICHAGE, SENS_REMBOURSEMENT, TYPES_TRANSACTION
 from src.database import enregistrer_parametres
 from src.services.backup_service import (
     creer_sauvegarde,
@@ -17,13 +17,14 @@ from src.services.regles_affectation_service import (
     supprimer_regle,
 )
 from src.themes import THEMES
+from src.ui_styles import hauteur_tableau
 
 
 def _index_option(options: list[str], valeur: str | None) -> int:
     return options.index(valeur) if valeur in options else 0
 
 
-def _afficher_regles_affectation() -> None:
+def _afficher_regles_affectation(table_height: int) -> None:
     st.divider()
     st.subheader("Règles d’affectation bancaire")
     st.caption("La priorité numérique la plus faible est appliquée en premier.")
@@ -38,7 +39,7 @@ def _afficher_regles_affectation() -> None:
             "Sens remboursement", "Catégorie remboursée", "Actif", "Priorité",
         ]
         table["Actif"] = table["Actif"].astype(bool)
-        st.dataframe(table, hide_index=True, width="stretch")
+        st.dataframe(table, hide_index=True, width="stretch", height=table_height)
 
     categories = sorted(
         {categorie for type_categorie in TYPES_TRANSACTION for categorie in noms_categories(type_categorie, True)}
@@ -132,12 +133,24 @@ def _afficher_regles_affectation() -> None:
 def afficher(parametres: dict) -> None:
     st.title("Paramètres")
     noms_themes = list(THEMES)
-    theme_actuel = parametres.get("theme_actif", "Vert pastel")
+    theme_actuel = parametres.get("theme_actif", "Sombre bleu")
+    affichages = list(CONFIGURATIONS_AFFICHAGE)
+    valeur_affichage = parametres.get("configuration_affichage", "ecran_15")
+    affichage_actuel = next(
+        (nom for nom, valeur in CONFIGURATIONS_AFFICHAGE.items() if valeur == valeur_affichage),
+        affichages[0],
+    )
     with st.form("parametres_generaux"):
         st.subheader("Apparence")
         theme = st.selectbox(
             "Thème actif", noms_themes,
             index=noms_themes.index(theme_actuel) if theme_actuel in noms_themes else 0,
+        )
+        affichage = st.selectbox(
+            "Configuration d’affichage",
+            affichages,
+            index=affichages.index(affichage_actuel),
+            help="15 pouces privilégie la compacité ; 27 pouces agrandit les graphiques et tableaux.",
         )
         st.caption("Le thème s’applique à toutes les pages après enregistrement.")
         st.divider()
@@ -163,6 +176,7 @@ def afficher(parametres: dict) -> None:
             else:
                 enregistrer_parametres({
                     "theme_actif": theme,
+                    "configuration_affichage": CONFIGURATIONS_AFFICHAGE[affichage],
                     "solde_initial_epargne": solde,
                     "seuil_vigilance_budget": vigilance / 100,
                     "seuil_alerte_budget": alerte / 100,
@@ -204,4 +218,4 @@ def afficher(parametres: dict) -> None:
             except Exception as erreur:
                 st.error(f"Restauration impossible : {erreur}")
 
-    _afficher_regles_affectation()
+    _afficher_regles_affectation(hauteur_tableau(parametres))

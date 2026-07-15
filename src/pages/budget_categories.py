@@ -8,9 +8,10 @@ from src.services.categories_service import (
     modifier_categorie,
     supprimer_categorie,
 )
+from src.ui_styles import hauteur_tableau
 
 
-def afficher(_parametres: dict) -> None:
+def afficher(parametres: dict) -> None:
     st.title("Catégories")
     st.caption("Les catégories actives alimentent automatiquement les formulaires et les budgets.")
     categories = lister_categories()
@@ -18,7 +19,10 @@ def afficher(_parametres: dict) -> None:
         table = pd.DataFrame(categories)[["id", "type", "categorie", "actif", "ordre"]]
         table.columns = ["Identifiant", "Type", "Catégorie", "Active", "Ordre"]
         table["Active"] = table["Active"].astype(bool)
-        st.dataframe(table, hide_index=True, width="stretch")
+        st.dataframe(
+            table, hide_index=True, width="stretch",
+            height=hauteur_tableau(parametres),
+        )
 
     col_ajout, col_modification = st.columns(2, gap="large")
     with col_ajout:

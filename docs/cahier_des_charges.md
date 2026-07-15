@@ -7,21 +7,21 @@ Fournir une application locale en français pour suivre les revenus, dépenses, 
 ## Périmètre fonctionnel
 
 - accueil présentant le module budget actif et le futur module courses ;
-- transactions manuelles, filtres, recherche, totaux et suppression confirmée ;
+- transactions manuelles en dialogue, filtres, recherche, totaux et suppression multiple confirmée ;
 - modification en tableau des transactions avec sauvegarde préalable ;
 - import manuel CSV/XLSX, association des colonnes, relecture et sélection des lignes ;
 - règles d’affectation configurables avec priorité et catégories dynamiques ;
 - détection conservatrice des doublons sur date, montant et libellé normalisé ;
 - catégories dynamiques avec ajout, modification, désactivation et suppression protégée ;
-- création du premier budget, modification des montants et duplication du mois suivant ;
+- création du premier budget, modification, duplication et suppression sécurisée d’un mois ;
 - calculs mensuels de réel, écart, utilisation et statut ;
 - suivi d’épargne avec soldes chaînés ;
 - tableau de bord avec six KPI et cinq visualisations ;
 - quatre graphiques interchangeables utilisant le thème actif et un graphique par catégorie séparé ;
 - alertes détaillées, comparatif complet M-1 et résumé automatique local ;
-- onze thèmes complets, cinq pastel et six sombres, avec contrastes adaptés ;
+- six thèmes sombres complets et configurations compactes pour écrans 15 ou 27 pouces ;
 - suivi d’épargne enrichi de cartes mensuelles et d’une courbe de solde ;
-- paramètres, dix thèmes, sauvegarde, restauration et export CSV.
+- paramètres, sauvegarde, restauration et export CSV.
 
 ## Règles essentielles
 
