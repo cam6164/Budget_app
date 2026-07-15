@@ -19,7 +19,7 @@ CONFIGURATIONS_AFFICHAGE = {
         "grid_height": 330,
     },
     "ecran_27": {
-        "chart_height": 280,
+        "chart_height": 300,
         "secondary_chart_height": 210,
         "table_height": 520,
         "preview_height": 265,

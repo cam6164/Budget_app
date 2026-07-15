@@ -335,14 +335,15 @@ def afficher(parametres: dict) -> None:
     if mode_27_pouces:
         st.markdown(
             """<style>
-            .block-container { padding-top: .42rem; padding-bottom: .65rem; }
-            [data-testid="stVerticalBlock"] { gap: .48rem; }
+            .block-container { padding-top: .52rem; padding-bottom: .75rem; }
+            [data-testid="stVerticalBlock"] { gap: .7rem; }
             [data-testid="stHorizontalBlock"] { gap: .62rem; }
-            .dashboard-title { margin-bottom: .42rem !important; }
-            .kpi-card { min-height: 65px; }
-            .dashboard-panel, .budget-excel { padding: .46rem .58rem; }
-            .alerts-panel { margin-top: .9rem; }
-            .budget-excel-grid { gap: .44rem; }
+            .dashboard-title { margin-bottom: .62rem !important; }
+            .kpi-card { min-height: 72px; padding: .55rem .65rem; }
+            .dashboard-panel, .budget-excel { padding: .55rem .65rem; }
+            .alerts-panel { margin-top: 1rem; }
+            .budget-excel { margin-top: .12rem; }
+            .budget-excel-grid { gap: .5rem; }
             </style>""",
             unsafe_allow_html=True,
         )
