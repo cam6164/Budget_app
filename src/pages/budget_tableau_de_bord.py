@@ -261,67 +261,82 @@ def afficher(parametres: dict) -> None:
     colonnes_budget = 4 if mode_27_pouces else 3
     st.markdown(
         """<style>
-        .block-container { max-width: 1900px; padding: .3rem .7rem .55rem; }
-        [data-testid="stVerticalBlock"] { gap: .32rem; }
+        .block-container { max-width: 1900px; padding: .12rem .7rem .65rem; }
+        [data-testid="stVerticalBlock"] { gap: .45rem; }
         [data-testid="stHorizontalBlock"] { gap: .5rem; }
+        .st-key-dashboard_entete { margin: 0 0 .18rem; }
         .dashboard-title {
-            width: 100%; margin: .15rem 0 .35rem !important;
-            text-align: center; font-size: 1.72rem !important;
+            width: 100%; margin: .08rem 0 .18rem !important;
+            text-align: center; font-size: 2.08rem !important;
             line-height: 1.15; letter-spacing: -.025em;
         }
-        .st-key-dashboard_kpis { margin-bottom: .4rem; }
+        .st-key-dashboard_entete .stButton > button,
+        .st-key-dashboard_entete [data-baseweb="select"] > div {
+            min-height: 2.75rem !important;
+        }
+        .st-key-dashboard_entete .stButton p,
+        .st-key-dashboard_entete [data-baseweb="select"] span,
+        .st-key-dashboard_analysis [data-baseweb="select"] span {
+            font-size: 1rem !important;
+        }
+        .st-key-dashboard_kpis { margin-bottom: .48rem; }
         .st-key-dashboard_analysis { margin-top: .25rem; }
-        .kpi-card { min-height: 67px; padding: .48rem .62rem; border-radius: 10px; }
+        .kpi-card { min-height: 80px; padding: .58rem .68rem; border-radius: 10px; }
         .kpi-card::after { height: 3px; }
-        .kpi-title { margin-bottom: .18rem; font-size: .78rem; white-space: nowrap; }
-        .kpi-value { font-size: 1.12rem; }
+        .kpi-title { margin-bottom: .24rem; font-size: .9rem; white-space: nowrap; }
+        .kpi-value { font-size: 1.34rem; }
         .dashboard-panel, .budget-excel {
             background: var(--app-carte); border: 1px solid var(--app-bordure);
-            border-radius: 10px; padding: .42rem .55rem;
+            border-radius: 10px; padding: .55rem .68rem;
         }
         .dashboard-panel h3, .budget-excel h3 {
-            font-size: .9rem !important; margin: 0 0 .28rem !important;
+            font-size: 1.06rem !important; margin: 0 0 .38rem !important;
             color: var(--app-principale);
         }
-        .comparison-table { width: 100%; border-collapse: collapse; font-size: .72rem; }
+        .comparison-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
         .comparison-table th, .comparison-table td {
-            padding: .14rem .2rem; border-bottom: 1px solid var(--app-bordure);
+            padding: .2rem .24rem; border-bottom: 1px solid var(--app-bordure);
             text-align: right; white-space: nowrap;
         }
         .comparison-table th:first-child { text-align: left; }
         .comparison-table thead th { color: var(--app-texte-secondaire); font-weight: 600; }
         .panel-note, .dashboard-empty {
-            color: var(--app-texte-secondaire); font-size: .72rem; line-height: 1.25;
-            margin: .25rem 0 0;
+            color: var(--app-texte-secondaire); font-size: .86rem; line-height: 1.3;
+            margin: .35rem 0 0;
         }
-        .alerts-panel { margin-top: .75rem; }
-        .compact-alerts { list-style: none; margin: 0; padding: 0; }
+        .alerts-panel { margin-top: .6rem; }
+        .compact-alerts {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr));
+            align-items: start; column-gap: 1rem; row-gap: .08rem;
+            list-style: none; margin: 0; padding: 0;
+        }
         .compact-alerts li {
-            display: flex; align-items: center; gap: .35rem; font-size: .75rem;
-            line-height: 1.2; padding: .12rem 0; color: var(--app-texte);
+            display: flex; align-items: center; gap: .4rem; font-size: .86rem;
+            line-height: 1.25; padding: .15rem 0; color: var(--app-texte);
         }
         .compact-alerts li span { width: .42rem; height: .42rem; border-radius: 50%; flex: none; }
         .compact-alerts .alert-ok span { background: var(--app-positive); }
         .compact-alerts .alert-warning span { background: var(--app-vigilance); }
         .compact-alerts .alert-danger span { background: var(--app-negative); }
         .compact-alerts .alert-more { color: var(--app-texte-secondaire); }
-        .budget-excel { min-height: 92px; padding-bottom: .58rem; }
+        .budget-excel { min-height: 108px; padding-bottom: .68rem; }
         .budget-excel-grid {
             display: grid; gap: .38rem; grid-template-columns: repeat(4, minmax(0, 1fr));
         }
         .budget-excel-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .budget-category {
             background: var(--app-bloc); border: 1px solid var(--app-bordure);
-            border-radius: 8px; padding: .38rem .48rem;
+            border-radius: 8px; padding: .48rem .55rem;
         }
         .budget-category header {
             display: flex; justify-content: space-between; gap: .4rem;
-            font-size: .78rem; margin-bottom: .24rem;
+            font-size: .9rem; margin-bottom: .3rem;
         }
         .category-ratio { color: var(--app-principale); font-weight: 700; white-space: nowrap; }
         .budget-row {
-            display: grid; grid-template-columns: 2.6rem minmax(35px, 1fr) 4.7rem;
-            align-items: center; gap: .3rem; font-size: .7rem; line-height: 1.45;
+            display: grid; grid-template-columns: 3rem minmax(35px, 1fr) 5.2rem;
+            align-items: center; gap: .35rem; font-size: .82rem; line-height: 1.5;
         }
         .budget-row b { text-align: right; white-space: nowrap; font-weight: 650; }
         .bar-track { height: .46rem; border-radius: 999px; background: var(--app-carte); overflow: hidden; }
@@ -337,17 +352,56 @@ def afficher(parametres: dict) -> None:
     if mode_27_pouces:
         st.markdown(
             """<style>
-            .block-container { padding-top: .52rem; padding-bottom: .75rem; }
-            [data-testid="stVerticalBlock"] { gap: .7rem; }
+            .block-container { padding-top: .08rem; padding-bottom: .35rem; }
+            [data-testid="stVerticalBlock"] { gap: .52rem; }
             [data-testid="stHorizontalBlock"] { gap: .62rem; }
-            .dashboard-title { margin-bottom: .62rem !important; }
-            .st-key-dashboard_kpis { margin-bottom: .75rem; }
-            .st-key-dashboard_analysis { margin-top: .35rem; }
-            .kpi-card { min-height: 72px; padding: .55rem .65rem; }
-            .dashboard-panel, .budget-excel { padding: .55rem .65rem; }
-            .alerts-panel { margin-top: 1rem; }
-            .budget-excel { min-height: 112px; margin-top: .35rem; }
-            .budget-excel-grid { gap: .5rem; }
+            .st-key-dashboard_entete { margin-top: -1rem; }
+            .dashboard-title {
+                margin-bottom: .25rem !important;
+                padding-top: 0 !important; padding-bottom: 0 !important;
+            }
+            .st-key-dashboard_kpis { margin-top: .45rem; margin-bottom: .78rem; }
+            .st-key-dashboard_analysis { margin-top: .4rem; }
+            .st-key-dashboard_analysis [data-testid="stElementContainer"]:has(
+                [role="combobox"][aria-label="Graphique principal"]
+            ) { margin-bottom: .2rem; }
+            .kpi-card { min-height: 86px; padding: .65rem .75rem; }
+            .dashboard-panel { padding: .48rem .75rem; }
+            .comparison-table th, .comparison-table td { padding: .1rem .22rem; }
+            .panel-note, .dashboard-empty { margin-top: .2rem; }
+            .alerts-panel { margin-top: 1.05rem; }
+            .compact-alerts li { padding: .08rem 0; }
+            .budget-excel {
+                min-height: 104px; margin-top: .55rem;
+                padding: .48rem .75rem .5rem;
+            }
+            .budget-excel h3 { margin-bottom: .3rem !important; }
+            .budget-excel-grid { gap: .35rem .5rem; }
+            .budget-category { padding: .3rem .55rem; }
+            .budget-category header { margin-bottom: .22rem; }
+            .budget-row { line-height: 1.38; }
+            @media (min-height: 960px) {
+                .st-key-dashboard_kpis {
+                    margin-top: .95rem; margin-bottom: 1.15rem;
+                }
+                .st-key-dashboard_analysis { margin-top: .65rem; }
+                .st-key-dashboard_analysis [data-testid="stElementContainer"]:has(
+                    [role="combobox"][aria-label="Graphique principal"]
+                ) { margin-bottom: .45rem; }
+                .alerts-panel { margin-top: 1.3rem; }
+                .budget-excel { margin-top: 1.05rem; }
+            }
+            @media (min-height: 1000px) {
+                .st-key-dashboard_kpis {
+                    margin-top: 1.25rem; margin-bottom: 1.35rem;
+                }
+                .st-key-dashboard_analysis { margin-top: .85rem; }
+                .st-key-dashboard_analysis [data-testid="stElementContainer"]:has(
+                    [role="combobox"][aria-label="Graphique principal"]
+                ) { margin-bottom: .65rem; }
+                .alerts-panel { margin-top: 1.5rem; }
+                .budget-excel { margin-top: 1.55rem; }
+            }
             </style>""",
             unsafe_allow_html=True,
         )
@@ -361,22 +415,25 @@ def afficher(parametres: dict) -> None:
         )
     with st.container(key="dashboard_entete"):
         col_commandes, col_titre, _ = st.columns(
-            [1, 6, 1], vertical_alignment="top"
+            [3, 4, 3], vertical_alignment="center"
         )
         with col_commandes:
-            emplacement_actualiser = st.empty()
-            selection = st.selectbox(
-                "Mois budget", mois, format_func=libelle_mois,
-                key="mois_tableau_de_bord",
-            )
-            st.session_state["mois_tableau_de_bord_memorise"] = selection
-            with emplacement_actualiser:
+            col_actualiser, col_mois = st.columns(2, gap="small")
+            with col_actualiser:
                 if st.button(
                     "Actualiser", key="actualiser_tableau_de_bord",
                     width="stretch",
                 ):
-                    st.session_state["mois_tableau_de_bord_memorise"] = selection
+                    st.session_state["mois_tableau_de_bord_memorise"] = (
+                        st.session_state["mois_tableau_de_bord"]
+                    )
                     recharger_page("Tableau de bord")
+            with col_mois:
+                selection = st.selectbox(
+                    "Mois budget", mois, format_func=libelle_mois,
+                    key="mois_tableau_de_bord", label_visibility="collapsed",
+                )
+            st.session_state["mois_tableau_de_bord_memorise"] = selection
         with col_titre:
             st.markdown(
                 '<h1 class="dashboard-title">Tableau de bord</h1>',
@@ -405,7 +462,7 @@ def afficher(parametres: dict) -> None:
     seuil_vigilance = float(parametres.get("seuil_vigilance_budget", 0.8))
     seuil_alerte = float(parametres.get("seuil_alerte_budget", 1.0))
     with st.container(key="dashboard_analysis"):
-        col_graphique, col_infos = st.columns([2.15, 1], gap="medium")
+        col_graphique, col_infos = st.columns([1.55, 1], gap="medium")
         with col_graphique:
             choix = st.selectbox(
                 "Graphique principal",
@@ -423,6 +480,13 @@ def afficher(parametres: dict) -> None:
                 if choix == "Évolution des dépenses cumulées du mois"
                 else _graphique_historique(choix, historique, couleurs, hauteur_principale)
             )
+            figure.update_layout(
+                font={"size": 15},
+                title_font={"size": 17},
+                legend={"font": {"size": 13}},
+            )
+            figure.update_xaxes(tickfont={"size": 13}, title_font={"size": 15})
+            figure.update_yaxes(tickfont={"size": 13}, title_font={"size": 15})
             st.plotly_chart(figure, width="stretch", key=f"graphique_principal_{choix}")
         with col_infos:
             _afficher_comparatif(selection)

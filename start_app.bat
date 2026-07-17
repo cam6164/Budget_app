@@ -82,8 +82,12 @@ echo Verification des dependances...
 ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r requirements.txt
 if errorlevel 1 goto :error
 
+echo Arret des anciennes instances de Budget_app...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\stop_existing_streamlit.ps1" -Port 8501
+if errorlevel 1 goto :error
+
 echo Lancement de Suivi budget et finances...
-".venv\Scripts\python.exe" -m streamlit run app.py
+".venv\Scripts\python.exe" -m streamlit run app.py --server.port=8501 --server.fileWatcherType=poll
 if errorlevel 1 goto :error
 exit /b 0
 
