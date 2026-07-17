@@ -19,7 +19,7 @@ CONFIGURATIONS_AFFICHAGE = {
         "grid_height": 330,
     },
     "ecran_27": {
-        "chart_height": 300,
+        "chart_height": 340,
         "secondary_chart_height": 210,
         "table_height": 520,
         "preview_height": 265,
@@ -129,7 +129,7 @@ def styliser_graphique(
     figure.update_layout(
         title={"text": titre or "", "font": {"size": 14}},
         height=hauteur or 420,
-        margin=dict(l=22, r=12, t=36 if titre else 18, b=48),
+        margin=dict(l=20, r=10, t=34 if titre else 16, b=44),
         paper_bgcolor=couleurs["couleur_carte"],
         plot_bgcolor=couleurs["couleur_bloc"],
         font={"color": couleurs["couleur_texte"], "size": 13},

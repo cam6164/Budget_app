@@ -32,18 +32,48 @@ def afficher_navigation() -> str:
         definir_page_active(page_active)
     st.markdown(
         """<style>
-        [data-testid="stSidebar"] {
+        [data-testid="stMain"] {
+            box-sizing: border-box !important;
+            padding-left: 260px !important;
+        }
+        .st-key-navigation_fixe {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            z-index: 2147483000 !important;
             display: block !important;
             visibility: visible !important;
-            transform: translateX(0) !important;
-            width: 300px !important;
-            min-width: 300px !important;
-            max-width: 300px !important;
+            opacity: 1 !important;
+            width: 260px !important;
+            min-width: 260px !important;
+            max-width: 260px !important;
+            height: 100vh !important;
+            padding: .9rem .85rem !important;
+            overflow-y: auto !important;
+            background: var(--app-carte) !important;
+            border-right: 1px solid var(--app-bordure) !important;
+            box-shadow: 8px 0 24px rgba(0,0,0,.2) !important;
+        }
+        .st-key-navigation_fixe h3 {
+            margin: .2rem 0 .8rem !important;
+            color: var(--app-texte) !important;
+        }
+        .st-key-navigation_fixe [data-testid="stVerticalBlock"] {
+            gap: .32rem !important;
+        }
+        .st-key-navigation_fixe .stButton > button {
+            width: 100% !important;
+            min-height: 2.55rem !important;
+            justify-content: flex-start !important;
+            border-radius: 7px !important;
+            margin: .04rem 0 !important;
+            font-size: .96rem !important;
         }
         </style>""",
         unsafe_allow_html=True,
     )
-    with st.sidebar:
+    with st.container(key="navigation_fixe"):
         st.markdown("### Budget personnel")
         for page in PAGES:
             if st.button(

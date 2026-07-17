@@ -269,6 +269,8 @@ def afficher(parametres: dict) -> None:
             text-align: center; font-size: 1.72rem !important;
             line-height: 1.15; letter-spacing: -.025em;
         }
+        .st-key-dashboard_kpis { margin-bottom: .4rem; }
+        .st-key-dashboard_analysis { margin-top: .25rem; }
         .kpi-card { min-height: 67px; padding: .48rem .62rem; border-radius: 10px; }
         .kpi-card::after { height: 3px; }
         .kpi-title { margin-bottom: .18rem; font-size: .78rem; white-space: nowrap; }
@@ -281,7 +283,7 @@ def afficher(parametres: dict) -> None:
             font-size: .9rem !important; margin: 0 0 .28rem !important;
             color: var(--app-principale);
         }
-        .comparison-table { width: 100%; border-collapse: collapse; font-size: .69rem; }
+        .comparison-table { width: 100%; border-collapse: collapse; font-size: .72rem; }
         .comparison-table th, .comparison-table td {
             padding: .14rem .2rem; border-bottom: 1px solid var(--app-bordure);
             text-align: right; white-space: nowrap;
@@ -289,13 +291,13 @@ def afficher(parametres: dict) -> None:
         .comparison-table th:first-child { text-align: left; }
         .comparison-table thead th { color: var(--app-texte-secondaire); font-weight: 600; }
         .panel-note, .dashboard-empty {
-            color: var(--app-texte-secondaire); font-size: .68rem; line-height: 1.2;
+            color: var(--app-texte-secondaire); font-size: .72rem; line-height: 1.25;
             margin: .25rem 0 0;
         }
         .alerts-panel { margin-top: .75rem; }
         .compact-alerts { list-style: none; margin: 0; padding: 0; }
         .compact-alerts li {
-            display: flex; align-items: center; gap: .35rem; font-size: .72rem;
+            display: flex; align-items: center; gap: .35rem; font-size: .75rem;
             line-height: 1.2; padding: .12rem 0; color: var(--app-texte);
         }
         .compact-alerts li span { width: .42rem; height: .42rem; border-radius: 50%; flex: none; }
@@ -303,26 +305,26 @@ def afficher(parametres: dict) -> None:
         .compact-alerts .alert-warning span { background: var(--app-vigilance); }
         .compact-alerts .alert-danger span { background: var(--app-negative); }
         .compact-alerts .alert-more { color: var(--app-texte-secondaire); }
-        .budget-excel { padding-bottom: .5rem; }
+        .budget-excel { min-height: 92px; padding-bottom: .58rem; }
         .budget-excel-grid {
             display: grid; gap: .38rem; grid-template-columns: repeat(4, minmax(0, 1fr));
         }
         .budget-excel-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .budget-category {
             background: var(--app-bloc); border: 1px solid var(--app-bordure);
-            border-radius: 8px; padding: .3rem .4rem;
+            border-radius: 8px; padding: .38rem .48rem;
         }
         .budget-category header {
             display: flex; justify-content: space-between; gap: .4rem;
-            font-size: .75rem; margin-bottom: .18rem;
+            font-size: .78rem; margin-bottom: .24rem;
         }
         .category-ratio { color: var(--app-principale); font-weight: 700; white-space: nowrap; }
         .budget-row {
             display: grid; grid-template-columns: 2.6rem minmax(35px, 1fr) 4.7rem;
-            align-items: center; gap: .25rem; font-size: .66rem; line-height: 1.35;
+            align-items: center; gap: .3rem; font-size: .7rem; line-height: 1.45;
         }
         .budget-row b { text-align: right; white-space: nowrap; font-weight: 650; }
-        .bar-track { height: .38rem; border-radius: 999px; background: var(--app-carte); overflow: hidden; }
+        .bar-track { height: .46rem; border-radius: 999px; background: var(--app-carte); overflow: hidden; }
         .bar-track i { display: block; height: 100%; border-radius: inherit; }
         @media (max-width: 1200px) {
             .budget-excel-grid, .budget-excel-grid.cols-3 {
@@ -339,10 +341,12 @@ def afficher(parametres: dict) -> None:
             [data-testid="stVerticalBlock"] { gap: .7rem; }
             [data-testid="stHorizontalBlock"] { gap: .62rem; }
             .dashboard-title { margin-bottom: .62rem !important; }
+            .st-key-dashboard_kpis { margin-bottom: .75rem; }
+            .st-key-dashboard_analysis { margin-top: .35rem; }
             .kpi-card { min-height: 72px; padding: .55rem .65rem; }
             .dashboard-panel, .budget-excel { padding: .55rem .65rem; }
             .alerts-panel { margin-top: 1rem; }
-            .budget-excel { margin-top: .12rem; }
+            .budget-excel { min-height: 112px; margin-top: .35rem; }
             .budget-excel-grid { gap: .5rem; }
             </style>""",
             unsafe_allow_html=True,
@@ -350,36 +354,48 @@ def afficher(parametres: dict) -> None:
     mois = sorted(set(mois_budget_disponibles()) | set(mois_disponibles()))
     if not mois:
         mois = [mois_canonique(date.today())]
+    mois_memorise = st.session_state.get("mois_tableau_de_bord_memorise")
     if st.session_state.get("mois_tableau_de_bord") not in mois:
-        st.session_state["mois_tableau_de_bord"] = mois[-1]
-    col_commandes, col_titre, _ = st.columns(
-        [1.25, 3.5, 1.25], vertical_alignment="top"
-    )
-    with col_commandes:
-        if st.button("Actualiser", width="stretch"):
-            recharger_page("Tableau de bord")
-        selection = st.selectbox(
-            "Mois budget", mois, format_func=libelle_mois,
-            key="mois_tableau_de_bord",
+        st.session_state["mois_tableau_de_bord"] = (
+            mois_memorise if mois_memorise in mois else mois[-1]
         )
-    with col_titre:
-        st.markdown(
-            '<h1 class="dashboard-title">Tableau de bord</h1>',
-            unsafe_allow_html=True,
+    with st.container(key="dashboard_entete"):
+        col_commandes, col_titre, _ = st.columns(
+            [1, 6, 1], vertical_alignment="top"
         )
+        with col_commandes:
+            emplacement_actualiser = st.empty()
+            selection = st.selectbox(
+                "Mois budget", mois, format_func=libelle_mois,
+                key="mois_tableau_de_bord",
+            )
+            st.session_state["mois_tableau_de_bord_memorise"] = selection
+            with emplacement_actualiser:
+                if st.button(
+                    "Actualiser", key="actualiser_tableau_de_bord",
+                    width="stretch",
+                ):
+                    st.session_state["mois_tableau_de_bord_memorise"] = selection
+                    recharger_page("Tableau de bord")
+        with col_titre:
+            st.markdown(
+                '<h1 class="dashboard-title">Tableau de bord</h1>',
+                unsafe_allow_html=True,
+            )
 
     kpi = indicateurs(selection)
-    colonnes = st.columns(6, gap="small")
-    cartes = [
-        ("Revenus du mois", euros(kpi["revenus"]), couleurs["couleur_positive"]),
-        ("Budget du mois", euros(kpi["budget_depenses"]), couleurs["couleur_secondaire"]),
-        ("Dépenses du mois", euros(kpi["depenses"]), couleurs["couleur_graphique_2"]),
-        ("Reste disponible", euros(kpi["reste_disponible"]), couleurs["couleur_positive"] if kpi["reste_disponible"] >= 0 else couleurs["couleur_negative"]),
-        ("Épargne nette", euros(kpi["epargne_nette"]), couleurs["couleur_positive"] if kpi["epargne_nette"] >= 0 else couleurs["couleur_negative"]),
-        ("Taux d’épargne", f"{kpi['taux_epargne']:.1%}", couleurs["couleur_graphique_3"]),
-    ]
-    for colonne, (titre, valeur, couleur) in zip(colonnes, cartes):
-        carte_kpi(colonne, titre, valeur, couleur)
+    with st.container(key="dashboard_kpis"):
+        colonnes = st.columns(6, gap="small")
+        cartes = [
+            ("Revenus du mois", euros(kpi["revenus"]), couleurs["couleur_positive"]),
+            ("Budget du mois", euros(kpi["budget_depenses"]), couleurs["couleur_secondaire"]),
+            ("Dépenses du mois", euros(kpi["depenses"]), couleurs["couleur_graphique_2"]),
+            ("Reste disponible", euros(kpi["reste_disponible"]), couleurs["couleur_positive"] if kpi["reste_disponible"] >= 0 else couleurs["couleur_negative"]),
+            ("Épargne nette", euros(kpi["epargne_nette"]), couleurs["couleur_positive"] if kpi["epargne_nette"] >= 0 else couleurs["couleur_negative"]),
+            ("Taux d’épargne", f"{kpi['taux_epargne']:.1%}", couleurs["couleur_graphique_3"]),
+        ]
+        for colonne, (titre, valeur, couleur) in zip(colonnes, cartes):
+            carte_kpi(colonne, titre, valeur, couleur)
 
     historique = pd.DataFrame(
         historique_mensuel(float(parametres.get("solde_initial_epargne", 0)))
@@ -388,26 +404,28 @@ def afficher(parametres: dict) -> None:
         historique["libelle_mois"] = historique["mois"].map(libelle_mois)
     seuil_vigilance = float(parametres.get("seuil_vigilance_budget", 0.8))
     seuil_alerte = float(parametres.get("seuil_alerte_budget", 1.0))
-    col_graphique, col_infos = st.columns([2.15, 1], gap="medium")
-    with col_graphique:
-        choix = st.selectbox(
-            "Graphique principal",
-            [
-                "Évolution des dépenses cumulées du mois",
-                "Dépenses par mois",
-                "Équilibre mensuel",
-                "Taux d’épargne par mois",
-                "Évolution du solde d’épargne",
-            ],
-        )
-        figure = (
-            _graphique_suivi(selection, couleurs, hauteur_principale)
-            if choix == "Évolution des dépenses cumulées du mois"
-            else _graphique_historique(choix, historique, couleurs, hauteur_principale)
-        )
-        st.plotly_chart(figure, width="stretch", key=f"graphique_principal_{choix}")
-    with col_infos:
-        _afficher_comparatif(selection)
-        _afficher_alertes(selection, seuil_vigilance, seuil_alerte)
+    with st.container(key="dashboard_analysis"):
+        col_graphique, col_infos = st.columns([2.15, 1], gap="medium")
+        with col_graphique:
+            choix = st.selectbox(
+                "Graphique principal",
+                [
+                    "Évolution des dépenses cumulées du mois",
+                    "Dépenses par mois",
+                    "Équilibre mensuel",
+                    "Taux d’épargne par mois",
+                    "Évolution du solde d’épargne",
+                ],
+                label_visibility="collapsed",
+            )
+            figure = (
+                _graphique_suivi(selection, couleurs, hauteur_principale)
+                if choix == "Évolution des dépenses cumulées du mois"
+                else _graphique_historique(choix, historique, couleurs, hauteur_principale)
+            )
+            st.plotly_chart(figure, width="stretch", key=f"graphique_principal_{choix}")
+        with col_infos:
+            _afficher_comparatif(selection)
+            _afficher_alertes(selection, seuil_vigilance, seuil_alerte)
 
     _afficher_budget_categories(selection, couleurs, colonnes_budget)

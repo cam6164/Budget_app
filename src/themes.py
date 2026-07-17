@@ -88,21 +88,10 @@ def appliquer_theme(nom: str) -> None:
         .stApp {{ background: var(--app-fond); color: var(--app-texte); }}
         [data-testid="stHeader"], [data-testid="stDecoration"],
         [data-testid="stToolbar"], [data-testid="collapsedControl"],
-        [data-testid="stSidebarCollapseButton"] {{
+        [data-testid="stSidebarCollapseButton"], [data-testid="stSidebar"] {{
             display: none !important;
         }}
         .block-container {{ max-width: 1680px; padding-top: .55rem; padding-bottom: 1.2rem; }}
-        [data-testid="stSidebar"] {{
-            background: {c['couleur_carte']};
-            border-right: 1px solid var(--app-bordure);
-        }}
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
-            color: var(--app-texte-secondaire);
-        }}
-        [data-testid="stSidebar"] .stButton > button {{
-            width: 100%; justify-content: flex-start; border-radius: 7px;
-            min-height: 2.45rem; margin: .08rem 0; font-size: 1.06rem;
-        }}
         h1 {{ font-size: 2rem !important; letter-spacing: -.025em; margin-bottom: .75rem !important; }}
         h2 {{ font-size: 1.42rem !important; margin-top: 1.7rem !important; }}
         h3 {{ font-size: 1.12rem !important; }}
